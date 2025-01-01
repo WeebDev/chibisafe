@@ -122,12 +122,11 @@ Once you have Caddy installed locally you can add this to your Caddyfile in orde
 ```
 # /etc/caddy/Caddyfile
 your-chibisafe-domain.com {
-	tls internal
 	reverse_proxy localhost:24424
 }
 ```
 
-If you are a CloudFlare user and want your instance to be proxied by them, you should instead use the one below since it adds the necessary headers to pass the visitor's IP to the chibisafe instance.
+If you use Cloudflare or a similar service and want your instance to be proxied by them, you should instead use the one below since it adds the necessary headers to pass the visitor's IP to the chibisafe instance. Note that the trusted proxies and X-Forwarded-For headers are specifically made for use with Cloudflare and will require modification for other proxies.
 
 ```
 # /etc/caddy/Caddyfile
