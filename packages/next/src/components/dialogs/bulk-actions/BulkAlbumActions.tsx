@@ -279,7 +279,7 @@ export const BulkAlbumActions = ({
 				<DialogHeader>
 					<DialogTitle>Manage albums</DialogTitle>
 					<DialogDescription>
-						Use the dropdown below to manage the albums from all thhe selected files.
+						Use the dropdown below to manage the albums from all the selected files.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4">
