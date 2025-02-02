@@ -3,14 +3,13 @@ import type { PageQuery } from '@/types';
 
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
 import { openAPIClient } from '@/lib/serverFetch';
 
 export const metadata: Metadata = {
-	title: 'Dashboard - Admin - User'
+	title: 'Dashboard - Admin - Users - User'
 };
 
 export default async function DashboardAdminUserPage({
@@ -59,11 +58,9 @@ export default async function DashboardAdminUserPage({
 			/>
 			<div className="px-2 w-full">
 				<div className="grid gap-4">
-					<Suspense>
-						<Pagination itemsTotal={data.count} type="admin" />
-						<FilesWrapper files={data.results} total={data.count} type="admin" />
-						<Pagination itemsTotal={data.count} type="admin" />
-					</Suspense>
+					<Pagination itemsTotal={data.count} type="admin" />
+					<FilesWrapper files={data.results} total={data.count} type="admin" />
+					<Pagination itemsTotal={data.count} type="admin" />
 					<FileDialog />
 				</div>
 			</div>

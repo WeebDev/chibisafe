@@ -1,15 +1,12 @@
 import type { Metadata } from 'next';
 
-import { DashboardHeader } from '@/components/DashboardHeader';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { openAPIClient } from '@/lib/serverFetch';
 import { RolesTable } from '@/components/tables/roles-table/RolesTable';
-import { CreateRoleDialog } from '@/components/dialogs/roles/CreateRoleDialog';
 
 export const metadata: Metadata = {
-	title: 'Dashboard - Admin - IPs'
+	title: 'Dashboard - Admin - Roles'
 };
 
 export default async function DashboardAdminIPsPage() {
@@ -24,24 +21,10 @@ export default async function DashboardAdminIPsPage() {
 	}
 
 	return (
-		<>
-			<DashboardHeader
-				title="Roles"
-				subtitle="Create and modify roles"
-				breadcrumbs={[
-					{ name: 'Admin', url: '/dashboard/admin' },
-					{ name: 'Roles', url: '/dashboard/admin/roles' }
-				]}
-			>
-				<CreateRoleDialog />
-			</DashboardHeader>
-			<div className="px-2 w-full flex flex-col gap-4">
-				<Suspense>
-					<Pagination itemsTotal={data.count} />
-				</Suspense>
-				{/* @ts-expect-error permissions doesnt exist in the schema, remove whhen it does */}
-				<RolesTable data={data.results} />
-			</div>
-		</>
+		<div className="px-2 w-full flex flex-col gap-4">
+			<Pagination itemsTotal={data.count} />
+			{/* @ts-expect-error permissions doesnt exist in the schema, remove whhen it does */}
+			<RolesTable data={data.results} />
+		</div>
 	);
 }

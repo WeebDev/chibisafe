@@ -1,18 +1,12 @@
 import type { Metadata } from 'next';
 import type { PageQuery } from '@/types';
-import { Plus } from 'lucide-react';
 
-import { DashboardHeader } from '@/components/DashboardHeader';
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
-import { UploadTrigger } from '@/components/UploadTrigger';
-import { Button } from '@/components/ui/react-aria-button';
-import { buttonVariants } from '@/styles/button';
-import { GlobalDropZone } from '@/components/Dropzone';
-import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
 import { openAPIClient } from '@/lib/serverFetch';
+import { GlobalDropZone } from '@/components/Dropzone';
 
 export const metadata: Metadata = {
 	title: 'Dashboard - Uploads'
@@ -43,28 +37,16 @@ export default async function DashboardPage({ searchParams }: { readonly searchP
 	});
 
 	return (
-		<>
-			<DashboardHeader title="Uploads" subtitle="Manage your uploads">
-				<UploadTrigger allowsMultiple>
-					<Button className={buttonVariants()}>
-						<Plus className="mr-2 h-4 w-4" />
-						Upload file
-					</Button>
-				</UploadTrigger>
-			</DashboardHeader>
-			<div className="px-2 w-full">
-				<HydrationBoundary state={dehydrate(queryClient)}>
-					<div className="grid gap-4">
-						<Suspense>
-							<Pagination type="uploads" />
-							<FilesWrapper type="uploads" />
-							<Pagination type="uploads" />
-						</Suspense>
-						<FileDialog />
-					</div>
-				</HydrationBoundary>
-			</div>
+		<div className="px-2 w-full">
+			<HydrationBoundary state={dehydrate(queryClient)}>
+				<div className="grid gap-4">
+					<Pagination type="uploads" />
+					<FilesWrapper type="uploads" />
+					<Pagination type="uploads" />
+					<FileDialog />
+				</div>
+			</HydrationBoundary>
 			<GlobalDropZone />
-		</>
+		</div>
 	);
 }

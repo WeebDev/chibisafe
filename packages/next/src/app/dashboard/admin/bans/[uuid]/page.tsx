@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 
 import { DashboardHeader } from '@/components/DashboardHeader';
 import type { PageQuery } from '@/types';
-import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
@@ -10,7 +9,7 @@ import { openAPIClient } from '@/lib/serverFetch';
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
-	title: 'Dashboard - Admin - IPs'
+	title: 'Dashboard - Admin - IPs - IP'
 };
 
 export default async function DashboardPage({
@@ -74,11 +73,9 @@ export default async function DashboardPage({
 			/>
 			<div className="px-2 w-full">
 				<div className="grid gap-4">
-					<Suspense>
-						<Pagination itemsTotal={data.count} type="admin" />
-						<FilesWrapper files={data.results} total={data.count} type="admin" />
-						<Pagination itemsTotal={data.count} type="admin" />
-					</Suspense>
+					<Pagination itemsTotal={data.count} type="admin" />
+					<FilesWrapper files={data.results} total={data.count} type="admin" />
+					<Pagination itemsTotal={data.count} type="admin" />
 					<FileDialog />
 				</div>
 			</div>

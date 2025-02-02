@@ -1,8 +1,6 @@
-import { DashboardHeader } from '@/components/DashboardHeader';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { SettingsForm } from '@/components/forms/SettingsForm';
-import { DiagnosticsDownloadButton } from '@/components/DiagnosticsDownloadButton';
 import { openAPIClient } from '@/lib/serverFetch';
 
 export const metadata: Metadata = {
@@ -21,20 +19,8 @@ export default async function DashboardAdminSettingsServicePage() {
 	}
 
 	return (
-		<>
-			<DashboardHeader
-				title="Settings"
-				subtitle="Manage all your chibisafe settings here"
-				breadcrumbs={[
-					{ name: 'Admin', url: '/dashboard/admin' },
-					{ name: 'Settings', url: '/dashboard/admin/settings' }
-				]}
-			>
-				<DiagnosticsDownloadButton />
-			</DashboardHeader>
-			<div className="px-2 w-full">
-				<SettingsForm settings={data} />
-			</div>
-		</>
+		<div className="px-2 w-full">
+			<SettingsForm settings={data} />
+		</div>
 	);
 }

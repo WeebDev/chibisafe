@@ -45,7 +45,8 @@ export default async function AlbumSettingsPage({ params }: { readonly params: {
 				subtitle={data.description ?? ''}
 				breadcrumbs={[
 					{ name: 'Albums', url: '/dashboard/albums' },
-					{ name: data.name, url: `/dashboard/albums/${params.uuid}` }
+					{ name: data.name, url: `/dashboard/albums/${params.uuid}` },
+					{ name: 'Settings', url: `/dashboard/albums/${params.uuid}/settings` }
 				]}
 			>
 				<UploadTrigger allowsMultiple albumUuid={params.uuid}>

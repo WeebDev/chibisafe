@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
 
 import type { PageQuery } from '@/types';
-import { DashboardHeader } from '@/components/DashboardHeader';
 import { AlbumSettingsDialog } from '@/components/dialogs/AlbumSettingsDialog';
-import { CreateAlbumDialog } from '@/components/dialogs/CreateAlbumDialog';
-import { Suspense } from 'react';
 import { AlbumPage } from './AlbumPage';
 
 export const metadata: Metadata = {
@@ -17,16 +14,9 @@ export default async function AlbumsPage({ searchParams }: { readonly searchPara
 	const search = searchParams.search ?? '';
 
 	return (
-		<>
-			<DashboardHeader title="Albums" subtitle="Manage and create albums">
-				<CreateAlbumDialog />
-			</DashboardHeader>
-			<div className="grid gap-8 w-full px-2">
-				<Suspense fallback="Loading...">
-					<AlbumPage page={currentPage} limit={perPage} search={search} />
-				</Suspense>
-			</div>
+		<div className="grid gap-8 w-full px-2">
+			<AlbumPage page={currentPage} limit={perPage} search={search} />
 			<AlbumSettingsDialog />
-		</>
+		</div>
 	);
 }

@@ -9,14 +9,13 @@ import { UploadTrigger } from '@/components/UploadTrigger';
 import { buttonVariants } from '@/styles/button';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
 import { openAPIClient } from '@/lib/serverFetch';
 
 export const metadata: Metadata = {
-	title: 'Dashboard - Albums'
+	title: 'Dashboard - Albums - Album'
 };
 
 export default async function AlbumPage({
@@ -88,16 +87,14 @@ export default async function AlbumPage({
 			<div className="px-2 w-full">
 				<HydrationBoundary state={dehydrate(queryClient)}>
 					<div className="grid gap-4">
-						<Suspense>
-							<Pagination type="album" albumUuid={params.uuid} />
-							<FilesWrapper type="album" albumUuid={params.uuid} />
-							<Pagination type="album" albumUuid={params.uuid} />
-						</Suspense>
+						<Pagination type="album" albumUuid={params.uuid} />
+						<FilesWrapper type="album" albumUuid={params.uuid} />
+						<Pagination type="album" albumUuid={params.uuid} />
 						<FileDialog />
 					</div>
 				</HydrationBoundary>
+				<GlobalDropZone albumUuid={params.uuid} />
 			</div>
-			<GlobalDropZone albumUuid={params.uuid} />
 		</>
 	);
 }

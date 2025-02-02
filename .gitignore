@@ -39,3 +39,5 @@ logs/
 chibisafe.moe.conf
 .idea/
 minio/
+
+.DS_Store

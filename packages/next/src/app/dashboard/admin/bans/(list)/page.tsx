@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
 
-import { DashboardHeader } from '@/components/DashboardHeader';
 import { redirect } from 'next/navigation';
 import { IpTable } from '@/components/tables/ip-bans-table/IpTable';
-import { BanIpDialog } from '@/components/dialogs/BanIpDialog';
-import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import type { PageQuery } from '@/types';
 import { openAPIClient } from '@/lib/serverFetch';
@@ -37,23 +34,9 @@ export default async function DashboardAdminIPsPage({ searchParams }: { readonly
 	}
 
 	return (
-		<>
-			<DashboardHeader
-				title="Banned IPs"
-				subtitle="Manage banned IPs"
-				breadcrumbs={[
-					{ name: 'Admin', url: '/dashboard/admin' },
-					{ name: 'Banned IPs', url: '/dashboard/admin/bans' }
-				]}
-			>
-				<BanIpDialog />
-			</DashboardHeader>
-			<div className="px-2 w-full flex flex-col gap-4">
-				<Suspense>
-					<Pagination itemsTotal={data.count} />
-				</Suspense>
-				<IpTable data={data.results} />
-			</div>
-		</>
+		<div className="px-2 w-full flex flex-col gap-4">
+			<Pagination itemsTotal={data.count} />
+			<IpTable data={data.results} />
+		</div>
 	);
 }

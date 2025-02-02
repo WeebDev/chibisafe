@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import type { PageQuery } from '@/types';
 
-import { DashboardHeader } from '@/components/DashboardHeader';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
@@ -40,25 +38,13 @@ export default async function AdminFilesPage({ searchParams }: { readonly search
 	}
 
 	return (
-		<>
-			<DashboardHeader
-				title="Everyone's files"
-				subtitle="Manage all of chibisafe files, no matter who owns them."
-				breadcrumbs={[
-					{ name: 'Admin', url: '/dashboard/admin' },
-					{ name: 'All files', url: '/dashboard/admin/files' }
-				]}
-			/>
-			<div className="px-2 w-full">
-				<div className="grid gap-4">
-					<Suspense>
-						<Pagination itemsTotal={data.count} type="admin" />
-						<FilesWrapper files={data.results} total={data.count} type="admin" />
-						<Pagination itemsTotal={data.count} type="admin" />
-					</Suspense>
-					<FileDialog />
-				</div>
+		<div className="px-2 w-full">
+			<div className="grid gap-4">
+				<Pagination itemsTotal={data.count} type="admin" />
+				<FilesWrapper files={data.results} total={data.count} type="admin" />
+				<Pagination itemsTotal={data.count} type="admin" />
+				<FileDialog />
 			</div>
-		</>
+		</div>
 	);
 }

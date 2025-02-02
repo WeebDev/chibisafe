@@ -5,14 +5,13 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
 import { openAPIClient } from '@/lib/serverFetch';
 
 export const metadata: Metadata = {
-	title: 'Dashboard - Tags'
+	title: 'Dashboard - Tags - Tag'
 };
 
 export default async function TagPage({
@@ -71,11 +70,9 @@ export default async function TagPage({
 			</DashboardHeader>
 			<div className="px-2 w-full">
 				<div className="grid gap-4">
-					<Suspense>
-						<Pagination itemsTotal={data.count} type="tag" />
-						<FilesWrapper files={data.results} total={data.count} type="tag" />
-						<Pagination itemsTotal={data.count} type="tag" />
-					</Suspense>
+					<Pagination itemsTotal={data.count} type="tag" />
+					<FilesWrapper files={data.results} total={data.count} type="tag" />
+					<Pagination itemsTotal={data.count} type="tag" />
 					<FileDialog />
 				</div>
 			</div>

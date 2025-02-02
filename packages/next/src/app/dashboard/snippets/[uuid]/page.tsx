@@ -47,7 +47,7 @@ export default async function PublicSnippetPage({ params }: { readonly params: {
 				subtitle={getDate(snippet.createdAt)}
 				breadcrumbs={[
 					{ name: 'Snippets', url: '/dashboard/snippets' },
-					{ name: snippet.name, url: `/dashboard/admin/ip/${params.uuid}` }
+					{ name: snippet.name, url: `/dashboard/snippets/${params.uuid}` }
 				]}
 			>
 				<DeleteSnippetDialog uuid={snippet.uuid} className="hidden md:inline-flex" />
