@@ -1,4 +1,9 @@
-import type { LocalStorageUser } from '@/types';
+import type { components } from '@/util/openapiSchema';
 import { atom } from 'jotai';
 
-export const currentUserAtom = atom<LocalStorageUser | null>(null);
+export type User = components['schemas']['RolesPermissions'] &
+	Omit<components['schemas']['User'], 'createdAt' | 'editedAt'> & {
+		apiKey: string | null;
+	};
+
+export const currentUserAtom = atom<User | null>(null);

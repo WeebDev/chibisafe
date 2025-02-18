@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type PropsWithChildren } from 'react';
 
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
-import type { Album, FilePropsType, FileWithAdditionalData, Tag } from '@/types';
+import type { FilePropsType } from '@/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
@@ -15,10 +15,14 @@ import { useMediaQuery } from 'usehooks-ts';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip } from './Tooltip';
 import { Button } from './ui/button';
-import request from '@/lib/request';
 import { toast } from 'sonner';
 import { useSetAtom } from 'jotai';
+import type { FileWithFileMetadataAndIndex } from '@/lib/atoms/fileDialog';
 import { isDialogOpenAtom } from '@/lib/atoms/fileDialog';
+import { ENV } from '@/util/env';
+import { openAPIClient } from '@/lib/clientFetch';
+import type { FolderWithFilesCountAndCoverImage } from '@/lib/atoms/albumSettingsDialog';
+import type { TagWithFilesCountAndCoverImage } from '@/lib/atoms/tags';
 
 const OpenButton = () => {
 	return (
@@ -53,24 +57,37 @@ const ComponentToRender = ({ children }: PropsWithChildren<{}>) => {
 	);
 };
 
+type AlbumOrTag = {
+	name: string;
+	uuid: string;
+};
+
 export const FileDialogInformation = ({
 	file,
 	type
-}: PropsWithChildren<{ readonly file: FileWithAdditionalData; readonly type: FilePropsType }>) => {
-	const [tags, setTags] = useState<Tag[]>([]);
-	const [fileTags, setFileTags] = useState<Tag[]>([]);
-	const [albums, setAlbums] = useState<Album[]>([]);
-	const [fileAlbums, setFileAlbums] = useState<Album[]>([]);
+}: PropsWithChildren<{ readonly file: FileWithFileMetadataAndIndex; readonly type: FilePropsType }>) => {
+	const [tags, setTags] = useState<TagWithFilesCountAndCoverImage[]>([]);
+	const [fileTags, setFileTags] = useState<AlbumOrTag[]>([]);
+	const [albums, setAlbums] = useState<FolderWithFilesCountAndCoverImage[]>([]);
+	const [fileAlbums, setFileAlbums] = useState<AlbumOrTag[]>([]);
 	const setModalOpen = useSetAtom(isDialogOpenAtom);
 
 	const addFileToAlbum = useCallback(
 		async (albumUuid: string) => {
 			try {
-				const { error } = await request.post({
-					url: `file/${file?.uuid}/album/${albumUuid}`
+				const { error } = await openAPIClient.POST('/api/v1/folders/{uuid}/files/bulk-add', {
+					params: {
+						path: {
+							uuid: albumUuid
+						}
+					},
+					body: {
+						uuids: [file?.uuid]
+					}
 				});
+
 				if (error) {
-					toast.error(error);
+					toast.error(error.message);
 					return;
 				}
 
@@ -85,11 +102,19 @@ export const FileDialogInformation = ({
 	const removeFileFromAlbum = useCallback(
 		async (albumUuid: string) => {
 			try {
-				const { error } = await request.delete({
-					url: `file/${file?.uuid}/album/${albumUuid}`
+				const { error } = await openAPIClient.POST('/api/v1/folders/{uuid}/files/bulk-delete', {
+					params: {
+						path: {
+							uuid: albumUuid
+						}
+					},
+					body: {
+						uuids: [file?.uuid]
+					}
 				});
+
 				if (error) {
-					toast.error(error);
+					toast.error(error.message);
 					return;
 				}
 
@@ -104,11 +129,19 @@ export const FileDialogInformation = ({
 	const addTagToFile = useCallback(
 		async (tagUuid: string) => {
 			try {
-				const { error } = await request.post({
-					url: `file/${file?.uuid}/tag/${tagUuid}`
+				const { error } = await openAPIClient.POST('/api/v1/tags/{uuid}/files/bulk-add', {
+					params: {
+						path: {
+							uuid: tagUuid
+						}
+					},
+					body: {
+						uuids: [file?.uuid]
+					}
 				});
+
 				if (error) {
-					toast.error(error);
+					toast.error(error.message);
 					return;
 				}
 
@@ -123,11 +156,19 @@ export const FileDialogInformation = ({
 	const removeTagFromFile = useCallback(
 		async (tagUuid: string) => {
 			try {
-				const { error } = await request.delete({
-					url: `file/${file?.uuid}/tag/${tagUuid}`
+				const { error } = await openAPIClient.POST('/api/v1/tags/{uuid}/files/bulk-delete', {
+					params: {
+						path: {
+							uuid: tagUuid
+						}
+					},
+					body: {
+						uuids: [file?.uuid]
+					}
 				});
+
 				if (error) {
-					toast.error(error);
+					toast.error(error.message);
 					return;
 				}
 
@@ -145,53 +186,59 @@ export const FileDialogInformation = ({
 			if (type === 'publicAlbum') return;
 			if (type === 'quarantine') return;
 
-			const { data: userAlbums, error: userAlbumsError } = await request.get({
-				url: 'albums',
-				query: { limit: 9999 },
-				options: {
-					next: {
-						tags: ['albums']
+			const { data: userAlbums, error: userAlbumsError } = await openAPIClient.GET('/api/v1/folders', {
+				params: {
+					query: {
+						limit: 9999
 					}
 				}
 			});
+
 			if (userAlbumsError) {
-				toast.error(userAlbumsError);
+				toast.error(userAlbumsError.message);
 				return;
 			}
 
-			setAlbums(userAlbums.albums);
+			setAlbums(userAlbums.results);
 
-			const { data: userTags, error: userTagsError } = await request.get({
-				url: 'tags',
-				query: { limit: 9999 },
-				options: {
-					next: {
-						tags: ['albums']
+			const { data: userTags, error: userTagsError } = await openAPIClient.GET('/api/v1/tags', {
+				params: {
+					query: {
+						limit: 9999
 					}
 				}
 			});
-			setTags(userTags.tags);
+
 			if (userTagsError) {
-				toast.error(userTagsError);
+				toast.error(userTagsError.message);
 				return;
 			}
 
-			const { data: userFile, error: userFileError } = await request.get({ url: `file/${file?.uuid}` });
+			setTags(userTags.results);
+
+			const { data: userFile, error: userFileError } = await openAPIClient.GET('/api/v1/files/{uuid}', {
+				params: {
+					path: {
+						uuid: file?.uuid
+					}
+				}
+			});
+
 			if (userFileError) {
-				toast.error(userFileError);
+				toast.error(userFileError.message);
 				return;
 			}
 
-			setFileAlbums(userFile.file.albums);
-			setFileTags(userFile.file.tags);
+			setFileAlbums(userFile.folders);
+			setFileTags(userFile.tags);
 		} catch (error) {
 			console.error(error);
 		}
 	}, [file?.uuid, type]);
 
 	useEffect(() => {
-		void fetchAdditionalData();
-	}, [fetchAdditionalData]);
+		if (file.isOwner) void fetchAdditionalData();
+	}, [fetchAdditionalData, file.isOwner]);
 
 	return (
 		<ComponentToRender>
@@ -204,7 +251,8 @@ export const FileDialogInformation = ({
 								User information
 							</h2>
 
-							{file.user ? (
+							{/* {file.user ? (
+								TODO: Not implemented yet
 								<>
 									<div>
 										<Label htmlFor="owner">
@@ -261,10 +309,10 @@ export const FileDialogInformation = ({
 									<Label htmlFor="owner">Owner</Label>
 									<Input value="No owner" name="owner" id="owner" readOnly />
 								</div>
-							)}
+							)} */}
 						</div>
 					</div>
-				) : (
+				) : file.isOwner ? (
 					<div className="w-full">
 						<div className="flex flex-col gap-2">
 							<h2 className="text-2xl font-semibold leading-none tracking-tight mb-4">Albums</h2>
@@ -298,7 +346,7 @@ export const FileDialogInformation = ({
 									placeholder="Select tags..."
 									options={tags.map(tag => ({
 										value: tag.uuid,
-										label: tag.name
+										label: `${tag.name}${tag.nearestParent ? ` (${tag.nearestParent.name})` : ''}`
 									}))}
 									initialSelected={fileTags.map(tag => tag.uuid)}
 									onSelected={async value => addTagToFile(value)}
@@ -307,7 +355,7 @@ export const FileDialogInformation = ({
 							</div>
 						</div>
 					</div>
-				)}
+				) : null}
 
 				<div className="flex flex-col gap-2 w-full">
 					<h2 className="text-2xl font-semibold leading-none tracking-tight mb-4">File information</h2>
@@ -319,43 +367,47 @@ export const FileDialogInformation = ({
 
 					<div>
 						<Label htmlFor="name">Name</Label>
-						<Input value={file.name} name="name" id="name" readOnly />
+						<Input value={file.filename} name="name" id="name" readOnly />
 					</div>
 
-					<div>
-						<Label htmlFor="original">Original</Label>
-						<Input value={file.original} name="original" id="original" readOnly />
-					</div>
+					{type === 'admin' || file.isOwner ? (
+						<div>
+							<Label htmlFor="original">Original</Label>
+							<Input value={file.fileMetadata?.originalFilename} name="original" id="original" readOnly />
+						</div>
+					) : null}
 
-					<div>
-						<Label htmlFor="ip">
-							IP{' '}
-							{type === 'admin' ? (
-								<Link
-									href={`/dashboard/admin/ip/${file.ip}`}
-									className="text-blue-500 underline inline-flex items-center ml-2"
-									onClick={() => setModalOpen(false)}
-								>
-									view files <ArrowUpRightFromSquare className="w-3 h-3 ml-1" />
-								</Link>
-							) : null}
-						</Label>
-						<Input value={file.ip} name="ip" id="ip" readOnly />
-					</div>
+					{type === 'admin' || file.isOwner ? (
+						<div>
+							<Label htmlFor="ip">
+								IP{' '}
+								{type === 'admin' ? (
+									<Link
+										href={`/dashboard/admin/ip/${file.fileMetadata?.ip}`}
+										className="text-blue-500 underline inline-flex items-center ml-2"
+										onClick={() => setModalOpen(false)}
+									>
+										view files <ArrowUpRightFromSquare className="w-3 h-3 ml-1" />
+									</Link>
+								) : null}
+							</Label>
+							<Input value={file.fileMetadata?.ip ?? 'No IP'} name="ip" id="ip" readOnly />
+						</div>
+					) : null}
 
 					<div>
 						<Label htmlFor="url">URL</Label>
-						<Input value={file.url} name="url" id="url" readOnly />
+						<Input value={`${ENV.BASE_API_URL}/${file.filename}`} name="url" id="url" readOnly />
 					</div>
 
 					<div>
 						<Label htmlFor="size">Size</Label>
-						<Input value={formatBytes(file.size)} name="size" id="size" readOnly />
+						<Input value={formatBytes(file.fileMetadata?.size ?? 0)} name="size" id="size" readOnly />
 					</div>
 
 					<div>
 						<Label htmlFor="hash">Hash</Label>
-						<Input value={file.hash} name="hash" id="hash" readOnly />
+						<Input value={file.fileMetadata?.hash} name="hash" id="hash" readOnly />
 					</div>
 
 					<div>

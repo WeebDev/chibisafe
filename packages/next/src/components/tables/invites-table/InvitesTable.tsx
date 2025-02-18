@@ -10,57 +10,62 @@ import {
 } from '@tanstack/react-table';
 import { useState, type PropsWithChildren } from 'react';
 import { DataTable } from '../DataTable';
-import type { Invite } from '@/types';
 import { InvitesConfirmationAction } from './InvitesConfirmationAction';
 import Link from 'next/link';
-import { getDate } from '@/lib/time';
+import { getDate, isValidDate } from '@/lib/time';
+import type { components } from '@/util/openapiSchema';
+
+type Invite = components['schemas']['UserInvite'] & {
+	invitee: components['schemas']['User'] | null;
+	user: components['schemas']['User'] | null;
+};
 
 const columnHelper = createColumnHelper<Invite>();
 const columns = [
-	columnHelper.accessor(row => row.code, {
+	columnHelper.accessor(row => row.identifier, {
 		id: 'code',
 		header: 'Code',
 		cell(props) {
 			return (
-				<Link href={`/invite/${props.row.original.code}`} className="link">
-					{props.row.original.code}
+				<Link href={`/invite/${props.row.original.identifier}`} className="link">
+					{props.row.original.identifier}
 				</Link>
 			);
 		}
 	}),
-	columnHelper.accessor(row => (row.used ? 'Used' : 'Available'), {
+	columnHelper.accessor(row => (row.invitee?.uuid ? 'Used' : 'Available'), {
 		id: 'status',
 		header: 'Status'
 	}),
-	columnHelper.accessor(row => row.createdBy.username, {
+	columnHelper.accessor(row => row.user, {
 		id: 'createdBy',
 		header: 'Created By',
 		cell(props) {
 			return (
-				<Link href={`/dashboard/admin/users/${props.row.original.createdBy.uuid}`} className="link">
-					{props.row.original.createdBy.username}
+				<Link href={`/dashboard/admin/users/${props.row.original.user!.uuid}`} className="link">
+					{props.row.original.user!.username}
 				</Link>
 			);
 		}
 	}),
-	columnHelper.accessor(row => getDate(row.createdAt), {
+	columnHelper.accessor(row => getDate(row.createdAt as string), {
 		id: 'createdAt',
 		header: 'Created At'
 	}),
-	columnHelper.accessor(row => row.usedBy.username, {
+	columnHelper.accessor(row => row.invitee, {
 		id: 'claimedBy',
 		header: 'Claimed By',
 		cell(props) {
-			return props.row.original.usedBy.uuid ? (
-				<Link href={`/dashboard/admin/users/${props.row.original.usedBy.uuid}`} className="link">
-					{props.row.original.usedBy.username}
+			return props.row.original.invitee?.uuid ? (
+				<Link href={`/dashboard/admin/users/${props.row.original.invitee.uuid}`} className="link">
+					{props.row.original.invitee.username}
 				</Link>
 			) : (
 				'N/A'
 			);
 		}
 	}),
-	columnHelper.accessor(row => (row.editedAt ? getDate(row.editedAt) : 'N/A'), {
+	columnHelper.accessor(row => (isValidDate(row.editedAt) ? getDate(row.editedAt as string) : 'N/A'), {
 		id: 'claimedAt',
 		header: 'Claimed At'
 	}),
@@ -68,15 +73,16 @@ const columns = [
 		id: 'actions',
 		header: '',
 		cell: props =>
-			props.row.original.used ? null : (
+			props.row.original.invitee?.uuid ? null : (
 				<div className="flex justify-end">
-					<InvitesConfirmationAction code={props.row.original.code} />
+					<InvitesConfirmationAction code={props.row.original.uuid} />
 				</div>
 			)
 	})
 ];
 
-export const InvitesTable = ({ data = [] }: PropsWithChildren<{ readonly data?: any | undefined }>) => {
+export const InvitesTable = ({ data = [] }: PropsWithChildren<{ readonly data?: Invite[] }>) => {
+	console.log(data);
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});

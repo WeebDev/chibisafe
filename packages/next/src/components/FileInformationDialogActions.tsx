@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, type PropsWithChildren } from 'react';
-import { MessageType, type FilePropsType, type FileWithAdditionalData } from '@/types';
+import { MessageType, type FilePropsType } from '@/types';
 import { useCopyToClipboard, useMediaQuery } from 'usehooks-ts';
-import { allowFile, deleteFile, deleteFileAsAdmin, quarantineFile } from '@/actions/FileDialogActions';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -22,8 +21,11 @@ import { useSetAtom } from 'jotai';
 import { confirmationDialogAtom } from '@/lib/atoms/dialogs/confirmationDialog';
 import { cn } from '@/lib/utils';
 import { useServerAction } from '@/hooks/useServerAction';
+import type { FileWithFileMetadataAndIndex } from '@/lib/atoms/fileDialog';
 import { isDialogOpenAtom } from '@/lib/atoms/fileDialog';
 import { useQueryClient } from '@tanstack/react-query';
+import { ENV } from '@/util/env';
+import { deleteFiles, quarantineFiles, unquarantineFiles } from '@/actions/BulkActions';
 
 const AllowFileButton = ({
 	uuid,
@@ -37,8 +39,8 @@ const AllowFileButton = ({
 	const setConfirmationDialog = useSetAtom(confirmationDialogAtom);
 	const setIsDialogOpen = useSetAtom(isDialogOpenAtom);
 	const { formAction, isPending, state } = useServerAction({
-		action: allowFile,
-		identifier: uuid
+		action: unquarantineFiles,
+		identifier: [uuid]
 	});
 	const queryClient = useQueryClient();
 
@@ -79,8 +81,8 @@ const QuarantineFileButton = ({
 	const setConfirmationDialog = useSetAtom(confirmationDialogAtom);
 	const setIsDialogOpen = useSetAtom(isDialogOpenAtom);
 	const { formAction, isPending, state } = useServerAction({
-		action: quarantineFile,
-		identifier: uuid
+		action: quarantineFiles,
+		identifier: [uuid]
 	});
 	const queryClient = useQueryClient();
 
@@ -111,19 +113,17 @@ const QuarantineFileButton = ({
 const DeleteFileButton = ({
 	uuid,
 	className,
-	isMobile = false,
-	type
+	isMobile = false
 }: {
 	readonly className?: string;
 	readonly isMobile?: boolean;
-	readonly type?: FilePropsType;
 	readonly uuid: string;
 }) => {
 	const setConfirmationDialog = useSetAtom(confirmationDialogAtom);
 	const setIsDialogOpen = useSetAtom(isDialogOpenAtom);
 	const { formAction, isPending, state } = useServerAction({
-		action: type === 'admin' ? deleteFileAsAdmin : deleteFile,
-		identifier: uuid
+		action: deleteFiles,
+		identifier: [uuid]
 	});
 	const queryClient = useQueryClient();
 
@@ -154,7 +154,7 @@ const DeleteFileButton = ({
 export function FileInformationDialogActions({
 	file,
 	type
-}: PropsWithChildren<{ readonly file: FileWithAdditionalData; readonly type: FilePropsType }>) {
+}: PropsWithChildren<{ readonly file: FileWithFileMetadataAndIndex; readonly type: FilePropsType }>) {
 	const [_, copy] = useCopyToClipboard();
 	const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -166,12 +166,16 @@ export function FileInformationDialogActions({
 			<DrawerContent>
 				{/* <DrawerClose asChild> */}
 				<div className="p-4 pb-0 grid gap-2 mb-2">
-					<Button variant="outline" className="w-full" onClick={() => void copy(file.url)}>
+					<Button
+						variant="outline"
+						className="w-full"
+						onClick={() => void copy(`${ENV.BASE_API_URL}/${file.filename}`)}
+					>
 						Copy link
 					</Button>
 
 					<a
-						href={file.url}
+						href={`${ENV.BASE_API_URL}/${file.filename}`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className={buttonVariants({ variant: 'outline', className: 'w-full' })}
@@ -180,7 +184,7 @@ export function FileInformationDialogActions({
 					</a>
 
 					<a
-						href={`/api/file/${file.uuid}/download`}
+						href={`${ENV.BASE_API_URL}/api/v1/files/${file.uuid}/download`}
 						rel="noopener noreferrer"
 						className={buttonVariants({ variant: 'outline', className: 'w-full' })}
 					>
@@ -197,7 +201,7 @@ export function FileInformationDialogActions({
 							)}
 						</>
 					) : null}
-					{type === 'publicAlbum' ? null : <DeleteFileButton uuid={file.uuid} isMobile={true} type={type} />}
+					{type === 'publicAlbum' ? null : <DeleteFileButton uuid={file.uuid} isMobile={true} />}
 				</div>
 				{/* </DrawerClose> */}
 			</DrawerContent>
@@ -209,14 +213,16 @@ export function FileInformationDialogActions({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="w-56">
 				<DropdownMenuGroup>
-					<DropdownMenuItem onClick={() => void copy(file.url)}>Copy link</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => void copy(`${ENV.BASE_API_URL}/${file.filename}`)}>
+						Copy link
+					</DropdownMenuItem>
 					<DropdownMenuItem asChild>
-						<a href={file.url} target="_blank" rel="noopener noreferrer">
+						<a href={`${ENV.BASE_API_URL}/${file.filename}`} target="_blank" rel="noopener noreferrer">
 							Open in new tab
 						</a>
 					</DropdownMenuItem>
 					<DropdownMenuItem asChild>
-						<a href={`/api/file/${file.uuid}/download`} rel="noopener noreferrer">
+						<a href={`${ENV.BASE_API_URL}/api/v1/files/${file.uuid}/download`} rel="noopener noreferrer">
 							Download
 						</a>
 					</DropdownMenuItem>
@@ -261,11 +267,7 @@ export function FileInformationDialogActions({
 							className="focus:text-destructive-foreground focus:bg-destructive p-0"
 							onSelect={e => e.preventDefault()}
 						>
-							<DeleteFileButton
-								uuid={file.uuid}
-								className="h-full flex px-2 py-1.5 cursor-default"
-								type={type}
-							/>
+							<DeleteFileButton uuid={file.uuid} className="h-full flex px-2 py-1.5 cursor-default" />
 						</DropdownMenuItem>
 					</>
 				)}

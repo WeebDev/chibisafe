@@ -2,21 +2,21 @@
 
 import { revalidateTag } from 'next/cache';
 import { MessageType } from '@/types';
-import request from '@/lib/request';
-import { getToken } from './utils';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const createAlbum = async (_: any, form: FormData) => {
 	const name = form.get('album') as string;
+	const description = form.get('description') as string;
+	const isNSFW = form.get('isNSFW') === 'true';
+
 	if (!name) return { message: 'Name is required', type: MessageType.Error };
 
 	try {
-		const { error } = await request.post({
-			url: 'album/create',
+		const { error } = await openAPIClient.POST('/api/v1/folders', {
 			body: {
-				name
-			},
-			headers: {
-				authorization: `Bearer ${getToken()}`
+				name,
+				description: description ?? '',
+				isNSFW: isNSFW ?? false
 			}
 		});
 

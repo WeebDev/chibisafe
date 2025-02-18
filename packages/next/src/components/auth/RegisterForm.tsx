@@ -8,19 +8,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { buttonVariants } from '@/styles/button';
 import { useRouter } from 'next/navigation';
-import request from '@/lib/request';
 import { toast } from 'sonner';
+import { openAPIClient } from '@/lib/clientFetch';
 
 export const RegisterForm = ({ code }: { readonly code?: string }) => {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 
-	async function onSubmit(data: FormData) {
+	async function onSubmit(form: FormData) {
 		setIsLoading(true);
 
-		const username = data.get('username');
-		const password = data.get('password');
-		const repassword = data.get('repassword');
+		const password = form.get('password');
+		const repassword = form.get('repassword');
 
 		if (password !== repassword) {
 			toast.error('Passwords do not match');
@@ -29,25 +28,16 @@ export const RegisterForm = ({ code }: { readonly code?: string }) => {
 		}
 
 		try {
-			const obj = {
-				url: 'auth/register',
+			const { error } = await openAPIClient.POST('/api/v1/auth/register', {
 				body: {
-					username,
-					password
+					username: form.get('username') as string,
+					password: form.get('password') as string,
+					...(code ? { inviteCode: code } : null)
 				}
-			};
-
-			if (code) {
-				// @ts-expect-error headers dont exist
-				obj.headers = {
-					invite: code
-				};
-			}
-
-			const { error } = await request.post(obj);
+			});
 
 			if (error) {
-				toast.error(error);
+				toast.error(error.message);
 				return;
 			}
 

@@ -9,8 +9,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Table as TableType } from '@tanstack/react-table';
+import type { RowData, Table as TableType } from '@tanstack/react-table';
 import { flexRender } from '@tanstack/react-table';
+import type { FilePropsType } from '@/types';
+
+declare module '@tanstack/table-core' {
+	interface TableMeta<TData extends RowData> {
+		albumUuid?: string;
+		isAdmin?: boolean;
+		type?: FilePropsType;
+	}
+}
 
 export const DataTable = ({
 	table,

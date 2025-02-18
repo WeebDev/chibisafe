@@ -3,19 +3,19 @@
 import { revalidateTag } from 'next/cache';
 import { MessageType } from '@/types';
 
-import request from '@/lib/request';
-import { getToken } from './utils';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const deleteAlbum = async (uuid: string) => {
 	try {
-		const { error } = await request.delete({
-			url: `album/${uuid}`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		const { error } = await openAPIClient.DELETE('/api/v1/folders/{uuid}', {
+			params: {
+				path: {
+					uuid
+				}
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('files');
 		revalidateTag('albums');
@@ -27,33 +27,37 @@ export const deleteAlbum = async (uuid: string) => {
 
 export const deleteAlbumAndFiles = async (uuid: string) => {
 	try {
-		const { error } = await request.delete({
-			url: `album/${uuid}/purge`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		const { error } = await openAPIClient.POST('/api/v1/folders/{uuid}/purge', {
+			params: {
+				path: {
+					uuid
+				}
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('files');
 		revalidateTag('albums');
-		return { message: 'Album and all files deleted', type: MessageType.Success };
+		return { message: 'Album purged', type: MessageType.Success };
 	} catch (error: any) {
 		return { message: error, type: MessageType.Error };
 	}
 };
 
-export const deleteLink = async (uuid: string, albumUuid: string) => {
+export const deleteLink = async (shareUuid: string, albumUuid: string) => {
 	try {
-		const { error } = await request.delete({
-			url: `album/${albumUuid}/link/${uuid}`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		console.log('deleteLink', shareUuid, albumUuid);
+		const { error } = await openAPIClient.DELETE('/api/v1/folders/{uuid}/share/{shareUuid}', {
+			params: {
+				path: {
+					uuid: albumUuid,
+					shareUuid
+				}
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('links');
 		return { message: 'Link deleted', type: MessageType.Success };
@@ -62,25 +66,21 @@ export const deleteLink = async (uuid: string, albumUuid: string) => {
 	}
 };
 
-export const toggleEnabled = async (_: any, form: FormData) => {
-	const uuid = form.get('uuid') as string;
-	const albumUuid = form.get('albumUuid') as string;
-	const enabled = form.get('enabled') === 'true';
-
+export const removeCollaborator = async (uuid: string, albumUuid: string) => {
 	try {
-		const { error } = await request.post({
-			url: `album/${albumUuid}/link/${uuid}/edit`,
-			body: {
-				enabled: !enabled
-			},
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		const { error } = await openAPIClient.DELETE('/api/v1/folders/{uuid}/collaborators/{collaboratorUuid}', {
+			params: {
+				path: {
+					uuid: albumUuid,
+					collaboratorUuid: uuid
+				}
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
-		return { message: `Link ${enabled ? 'disabled' : 'enabled'}`, type: MessageType.Success };
+		revalidateTag('collaborators');
+		return { message: 'Collaborator removed', type: MessageType.Success };
 	} catch (error: any) {
 		return { message: error, type: MessageType.Error };
 	}

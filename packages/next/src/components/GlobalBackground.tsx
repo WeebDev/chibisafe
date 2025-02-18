@@ -1,24 +1,17 @@
-import request from '@/lib/request';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const GlobalBackground = async () => {
-	const { data, error } = await request.get({
-		url: 'settings',
-		options: {
-			next: {
-				tags: ['settings']
-			}
-		}
-	});
+	const { data, error } = await openAPIClient.GET('/api/v1/settings');
 
 	if (error) {
 		return null;
 	}
 
-	if (data?.backgroundImageURL) {
+	if (data?.siteBackgroundUrl.value) {
 		return (
 			<div
 				className="fixed inset-0 z-[-1] bg-no-repeat bg-center bg-cover"
-				style={{ backgroundImage: `url(${data.backgroundImageURL})` }}
+				style={{ backgroundImage: `url(${data.siteBackgroundUrl.value})` }}
 			/>
 		);
 	}

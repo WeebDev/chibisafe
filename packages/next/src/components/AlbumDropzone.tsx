@@ -41,7 +41,7 @@ export const AlbumDropZone = (props: DropZonePropsWithAlbumUuid) => {
 						uploadQueue.add(async () =>
 							uploadFile({
 								file: file instanceof File ? file : await file.getFile(),
-								endpoint: '/api/upload',
+								endpoint: 'api/v1/upload',
 								isNetworkStored: false,
 								method: 'POST'
 							})

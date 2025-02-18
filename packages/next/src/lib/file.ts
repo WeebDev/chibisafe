@@ -1,4 +1,4 @@
-import type { FileWithAdditionalData } from '@/types';
+import type { FileWithFileMetadataAndIndex } from './atoms/fileDialog';
 
 export const formatBytes = (bytes: number, decimals = 2) => {
 	if (bytes === 0) return '0 Bytes';
@@ -18,30 +18,58 @@ export const formatBytes = (bytes: number, decimals = 2) => {
 	return `${Number.parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
 };
 
-export const isFileVideo = (file: FileWithAdditionalData | null) => {
-	if (!file) return false;
-	const { type } = file;
-	return type.startsWith('video/');
+export const isFileVideo = (file: FileWithFileMetadataAndIndex | null) => {
+	if (!file?.fileMetadata) return false;
+	const { mimeType } = file.fileMetadata;
+	return mimeType?.startsWith('video/');
 };
 
-export const isFileImage = (file: FileWithAdditionalData | null) => {
-	if (!file) return false;
-	const { type } = file;
-	return type.startsWith('image/');
+export const isFileImage = (file: FileWithFileMetadataAndIndex | null) => {
+	if (!file?.fileMetadata) return false;
+	const { mimeType } = file.fileMetadata;
+	return mimeType?.startsWith('image/');
 };
 
-export const isFileAudio = (file: FileWithAdditionalData | null) => {
-	if (!file) return false;
-	const { type } = file;
-	return type.startsWith('audio/');
+export const isFileAudio = (file: FileWithFileMetadataAndIndex | null) => {
+	if (!file?.fileMetadata) return false;
+	const { mimeType } = file.fileMetadata;
+	return mimeType?.startsWith('audio/');
 };
 
-export const isFilePDF = (file: FileWithAdditionalData | null) => {
-	if (!file) return false;
-	const { type } = file;
-	return type === 'application/pdf';
+export const isFilePDF = (file: FileWithFileMetadataAndIndex | null) => {
+	if (!file?.fileMetadata) return false;
+	const { mimeType } = file.fileMetadata;
+	return mimeType === 'application/pdf';
 };
 
 export const getFileExtension = (name: string) => {
 	return name.split('.').pop();
 };
+
+export function convertDataRateLog(inputBytesPerSecond: number): string {
+	const units = ['B/s', 'kB/s', 'MB/s', 'GB/s', 'TB/s'];
+	const base = 1_000;
+
+	if (inputBytesPerSecond < 1) {
+		return inputBytesPerSecond + ' ' + units[0];
+	}
+
+	const exponent = Math.floor(Math.log10(inputBytesPerSecond) / Math.log10(base));
+	const value = inputBytesPerSecond / base ** exponent;
+
+	return value.toFixed(2) + ' ' + units[exponent];
+}
+
+export function convertDataRateLogBinary(inputBytesPerSecond: number): string {
+	const units = ['B/s', 'KiB/s', 'MiB/s', 'GiB/s', 'TiB/s'];
+	const base = 1_024;
+
+	if (inputBytesPerSecond < 1) {
+		return inputBytesPerSecond + ' ' + units[0];
+	}
+
+	const exponent = Math.floor(Math.log2(inputBytesPerSecond) / Math.log2(base));
+	const value = inputBytesPerSecond / base ** exponent;
+
+	return value.toFixed(2) + ' ' + units[exponent];
+}

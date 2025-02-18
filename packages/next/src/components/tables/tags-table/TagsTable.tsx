@@ -10,13 +10,12 @@ import {
 } from '@tanstack/react-table';
 import { useState, type PropsWithChildren } from 'react';
 import { DataTable } from '../DataTable';
-import type { TagWithCount } from '@/types';
 import { Button } from '@/components/ui/button';
 import { DeleteTagButton } from './DeleteTagButton';
 import { ArrowUpDown } from 'lucide-react';
 import Link from 'next/link';
 
-const columnHelper = createColumnHelper<TagWithCount>();
+const columnHelper = createColumnHelper<any>();
 const columns = [
 	columnHelper.accessor(row => row.name, {
 		id: 'name',
@@ -31,12 +30,12 @@ const columns = [
 		cell(props) {
 			return (
 				<Link href={`/dashboard/tags/${props.row.original.uuid}`} className="link">
-					{props.row.original.name}
+					{`${props.row.original.name}${props.row.original.nearestParent ? ` (${props.row.original.nearestParent.name})` : ''}`}
 				</Link>
 			);
 		}
 	}),
-	columnHelper.accessor(row => row._count.files, {
+	columnHelper.accessor(row => row.filesCount, {
 		id: 'files',
 		header: ({ column }) => {
 			return (

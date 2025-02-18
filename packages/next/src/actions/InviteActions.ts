@@ -2,20 +2,15 @@
 
 import { revalidateTag } from 'next/cache';
 import { MessageType } from '@/types';
-import request from '@/lib/request';
-import { getToken } from './utils';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const createInvite = async (_: FormData) => {
 	try {
-		const { error } = await request.post({
-			url: 'admin/invite/create',
-			headers: {
-				authorization: `Bearer ${getToken()}`
-			}
+		const { error } = await openAPIClient.POST('/api/v1/invites', {
+			body: {}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
-
+		if (error) return { message: error.message, type: MessageType.Error };
 		revalidateTag('invites');
 		return {};
 	} catch {
@@ -25,18 +20,15 @@ export const createInvite = async (_: FormData) => {
 
 export const revokeInvite = async (uuid: string) => {
 	try {
-		const { error } = await request.post({
-			url: 'admin/invite/delete',
-			body: {
-				code: uuid
-			},
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		const { error } = await openAPIClient.DELETE('/api/v1/invites/{uuid}', {
+			params: {
+				path: {
+					uuid
+				}
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
-
+		if (error) return { message: error.message, type: MessageType.Error };
 		revalidateTag('invites');
 		return { message: 'Invite revoked', type: MessageType.Success };
 	} catch (error: any) {

@@ -2,30 +2,21 @@
 
 import { revalidateTag } from 'next/cache';
 import { MessageType } from '@/types';
-import request from '@/lib/request';
-import { getToken } from './utils';
+import { openAPIClient } from '@/lib/serverFetch';
 
-export const createTag = async (_: any, form: FormData) => {
-	const name = form.get('name') as string;
+export const createTag = async (name: string, parentsUuid?: string[]) => {
+	console.log(parentsUuid);
 	if (!name) return { message: 'Name is required', type: MessageType.Error };
 
 	try {
-		const { error } = await request.post({
-			url: 'tag/create',
+		const { error } = await openAPIClient.POST('/api/v1/tags', {
 			body: {
+				...(parentsUuid?.length ? { parents: parentsUuid } : null),
 				name
-			},
-			headers: {
-				authorization: `Bearer ${getToken()}`
-			},
-			options: {
-				next: {
-					tags: ['tags']
-				}
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('tags');
 		return { message: 'Tag created', type: MessageType.Success };
@@ -36,19 +27,15 @@ export const createTag = async (_: any, form: FormData) => {
 
 export const deleteTag = async (uuid: string) => {
 	try {
-		const { error } = await request.delete({
-			url: `tag/${uuid}`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
-			},
-			options: {
-				next: {
-					tags: ['tags']
+		const { error } = await openAPIClient.DELETE(`/api/v1/tags/{uuid}`, {
+			params: {
+				path: {
+					uuid
 				}
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('tags');
 		return { message: 'Tag deleted', type: MessageType.Success };

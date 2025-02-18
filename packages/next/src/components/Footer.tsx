@@ -1,17 +1,10 @@
 import { cn } from '@/lib/utils';
 import { ChibisafeDefaultLogo } from '@/components/svg/ChibisafeLogo';
 import Link from 'next/link';
-import request from '@/lib/request';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const SiteFooter = async ({ className = '' }: { readonly className?: string }) => {
-	const { data } = await request.get({
-		url: 'settings',
-		options: {
-			next: {
-				tags: ['settings']
-			}
-		}
-	});
+	const { data } = await openAPIClient.GET('/api/v1/settings');
 
 	return (
 		<footer className={cn(className, 'bg-background-transparent')}>
@@ -43,7 +36,8 @@ export const SiteFooter = async ({ className = '' }: { readonly className?: stri
 					</p>
 				</div>
 				<div className="flex flex-col items-center gap-4 md:flex-row text-xs">
-					{data?.rulesPageContent ? (
+					{/* TODO: Re-enable this */}
+					{/* {data?.rulesPageContent ? (
 						<Link href="/rules" aria-label="rules">
 							Rules
 						</Link>
@@ -57,7 +51,7 @@ export const SiteFooter = async ({ className = '' }: { readonly className?: stri
 						<Link href="/terms-of-service" aria-label="terms of service">
 							Terms of service
 						</Link>
-					) : null}
+					) : null} */}
 				</div>
 			</div>
 		</footer>

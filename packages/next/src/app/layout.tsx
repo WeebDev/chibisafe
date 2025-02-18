@@ -13,8 +13,8 @@ import { UserProvider } from '@/components/providers/UserProvider';
 
 import { Providers } from './providers';
 import { GlobalBackground } from '@/components/GlobalBackground';
-import request from '@/lib/request';
 import { GlobalAdminNotice } from '@/components/GlobalAdminNotice';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const viewport: Viewport = {
 	width: 'device-width',
@@ -27,36 +27,18 @@ export const viewport: Viewport = {
 	]
 };
 
-const meta = {
-	url: 'https://chibisafe.app',
-	name: 'chibisafe',
-	description: 'Beautiful and performant vault to save all your files in the cloud.'
-};
-
 export async function generateMetadata() {
-	const { data: settings, error } = await request.get({
-		url: 'settings',
-		options: {
-			next: {
-				tags: ['settings']
-			}
-		}
-	});
-
-	if (error) {
-		console.log(error);
-	}
+	const { data } = await openAPIClient.GET('/api/v1/settings');
+	if (!data) return {};
 
 	return {
-		metadataBase: new URL(settings?.serveUploadsFrom || meta.url),
+		metadataBase: new URL(data.siteUrl.value),
 		title: {
-			default: settings?.serviceName ?? meta.name,
-			template: `%s - ${settings?.serviceName ?? meta.name}`
+			default: data.siteName.value,
+			template: `%s - ${data.siteName.value}`
 		},
-		description: settings?.metaDescription ?? meta.description,
-		keywords: settings?.metaKeywords.length
-			? settings.metaKeywords
-			: ['chibisafe', 'file uploader', 'vault', 'react', 'free', 'open source', 'pitu', 'kana', 'kana.dev'],
+		description: data.siteDescription.value,
+		keywords: data.siteKeywords.value,
 		authors: [
 			{
 				name: 'Pitu',
@@ -68,18 +50,18 @@ export async function generateMetadata() {
 		openGraph: {
 			type: 'website',
 			locale: 'en_US',
-			url: settings?.metaDomain ?? meta.url,
-			title: settings?.serviceName ?? meta.name,
-			description: settings?.metaDescription ?? meta.description,
-			siteName: settings?.serviceName ?? meta.name,
+			url: data.siteUrl.value,
+			title: data.siteName.value,
+			description: data.siteDescription.value,
+			siteName: data.siteName.value,
 			images: [`/og`]
 		},
 		twitter: {
 			card: 'summary_large_image',
-			title: settings?.serviceName ?? meta.name,
-			description: settings?.metaDescription ?? meta.description,
+			title: data.siteName.value,
+			description: data.siteDescription.value,
 			images: [`/og`],
-			creator: settings?.metaTwitterHandle ?? '@twitter'
+			creator: data.siteAuthor.value
 		},
 		icons: {
 			icon: '/favicon.ico',

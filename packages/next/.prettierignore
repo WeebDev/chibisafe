@@ -10,3 +10,4 @@ node_modules
 .next
 build
 .contentlayer
+src/util/openapiSchema.ts

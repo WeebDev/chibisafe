@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 /* eslint-disable react/style-prop-object */
 
-import request from '@/lib/request';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const ChibisafeDefaultLogo = ({
 	className = '',
@@ -546,23 +546,16 @@ export const ChibisafeDefaultLogo = ({
 );
 
 export const ChibisafeLogo = async ({ className = '' }: { readonly className?: string }) => {
-	const { data, error } = await request.get({
-		url: 'settings',
-		options: {
-			next: {
-				tags: ['settings']
-			}
-		}
-	});
+	const { data, error } = await openAPIClient.GET('/api/v1/settings');
 
 	if (error) {
 		return <ChibisafeDefaultLogo className={className} />;
 	}
 
-	if (data?.logoURL) {
+	if (data?.siteLogoUrl.value) {
 		return (
 			<picture>
-				<img src={data.logoURL} alt="chibisafe" className={className} />
+				<img src={data.siteLogoUrl.value} alt="chibisafe" className={className} />
 			</picture>
 		);
 	}

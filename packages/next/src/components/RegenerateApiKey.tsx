@@ -1,17 +1,16 @@
 'use client';
 
-import { useFormState } from 'react-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { requestNewApiKey } from '@/actions/AuthActions';
 import { MessageType } from '@/types';
 import type { PropsWithChildren } from 'react';
-import { useEffect } from 'react';
+import { useActionState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 export const RegenerateApiKey = ({ apiKey }: PropsWithChildren<{ readonly apiKey: string }>) => {
-	const [state, formAction] = useFormState(requestNewApiKey, {
+	const [state, formAction] = useActionState(requestNewApiKey, {
 		message: '',
 		type: MessageType.Uninitialized
 	});

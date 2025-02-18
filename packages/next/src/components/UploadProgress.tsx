@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { CopyIcon, InfoIcon, Loader2, XIcon } from 'lucide-react';
 
-import { uploadsAtom } from '@/lib/atoms/uploads';
+import { unfinishedUploadsAtom, uploadsAtom, uploadsQueueAtom } from '@/lib/atoms/uploads';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -15,12 +15,19 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCopyToClipboard } from 'usehooks-ts';
 import { Label, ProgressBar as ReactAriaProgressBar } from 'react-aria-components';
 import { Tooltip } from './Tooltip';
+import { convertDataRateLog } from '@/lib/file';
 
 type Status = 'complete' | 'idle' | 'uploading';
 
 export const UploadProgress = () => {
 	const [open, setOpen] = useState(false);
-	const [uploads, setUploads] = useAtom(uploadsAtom);
+	// const [uploads, setUploads] = useAtom(uploadsAtom);
+
+	// const finishedUploads = useAtomValue(finishedUploadsAtom);
+	const uploads = useAtomValue(uploadsAtom);
+	const setUploadQueue = useSetAtom(uploadsQueueAtom);
+	const unfinishedUploads = useAtomValue(unfinishedUploadsAtom);
+
 	const [buttonText, setButtonText] = useState('');
 	const [filesUploading, setFilesUploading] = useState(0);
 	const [totalProgress, setTotalProgress] = useState(0);
@@ -29,13 +36,13 @@ export const UploadProgress = () => {
 	const queryClient = useQueryClient();
 
 	const removeFile = (uuid: string) => {
-		setUploads(uploads.filter(file => file.uuid !== uuid));
+		setUploadQueue(uploads.filter(file => file.uuid !== uuid));
 		// TODO: Not entirely sure why the array is not empty after removing the last file
 		if (uploads.length === 1) setOpen(false);
 	};
 
 	const clearAll = () => {
-		setUploads([]);
+		setUploadQueue([]);
 		setOpen(false);
 	};
 
@@ -45,15 +52,17 @@ export const UploadProgress = () => {
 	};
 
 	useEffect(() => {
-		setFilesUploading(uploads.filter(file => file.processing).length);
+		setFilesUploading(unfinishedUploads.length);
 		let timeout: NodeJS.Timeout;
 
 		if (filesUploading > 0) {
 			setStatus('uploading');
 			setButtonText(`Uploading ${filesUploading} file${filesUploading === 1 ? '' : 's'}`);
 			setTotalProgress(
-				uploads.filter(file => file.status !== 'error').reduce((acc, file) => acc + file.progress, 0) /
-					uploads.length
+				// TODO: The logic here is wrong, it should be the sum of all uploads progress divided by the number of uploads
+				// but also filtering the ones that ended?
+				// .filter(file => file.status !== 'error')
+				uploads.reduce((acc, file) => acc + file.percentComplete, 0) / uploads.length
 			);
 		} else if (uploads.length > 0) {
 			setStatus('complete');
@@ -75,7 +84,7 @@ export const UploadProgress = () => {
 		return () => {
 			clearTimeout(timeout);
 		};
-	}, [filesUploading, queryClient, uploads]);
+	}, [filesUploading, queryClient, unfinishedUploads.length, uploads]);
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
@@ -110,19 +119,14 @@ export const UploadProgress = () => {
 						{uploads.map(file => (
 							<li key={file.uuid} className="flex items-center justify-between flex-col mb-4 last:mb-0">
 								<ReactAriaProgressBar
-									value={file.progress}
+									value={file.percentComplete}
 									className="flex flex-col gap-3 w-full text-white"
 									aria-label="File progress bar"
 								>
 									{({ percentage, valueText }) => (
 										<>
 											<div className="flex text-sm">
-												{file.status === 'uploading' ? (
-													<>
-														<Label className="flex-1">Uploading {file.name}...</Label>
-														<span>{valueText}</span>
-													</>
-												) : file.status === 'success' ? (
+												{file.finished ? (
 													<div className="flex justify-between flex-1 gap-4 items-center">
 														<a
 															href={file.url}
@@ -156,7 +160,7 @@ export const UploadProgress = () => {
 															</Tooltip>
 														</div>
 													</div>
-												) : file.status === 'error' ? (
+												) : file.error ? (
 													<div className="flex justify-between flex-1">
 														{file.name}
 														<div className="flex">
@@ -167,7 +171,17 @@ export const UploadProgress = () => {
 															</Tooltip>
 														</div>
 													</div>
-												) : null}
+												) : (
+													<>
+														<Label className="flex-1">
+															Uploading {file.name}...{' '}
+															<span className="text-xs">
+																{convertDataRateLog(file.uploadSpeed)}
+															</span>
+														</Label>
+														<span>{valueText}</span>
+													</>
+												)}
 											</div>
 											<div className="h-2 top-[50%] transform translate-y-[-50%] w-full rounded-full bg-white bg-opacity-40">
 												<div

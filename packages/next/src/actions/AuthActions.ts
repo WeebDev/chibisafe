@@ -1,9 +1,8 @@
 'use server';
 
 import { MessageType } from '@/types';
-import request from '@/lib/request';
 import { revalidateTag } from 'next/cache';
-import { getToken } from './utils';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const changePassword = async (_: any, form: FormData) => {
 	const password = form.get('currentpassword') as string;
@@ -16,18 +15,14 @@ export const changePassword = async (_: any, form: FormData) => {
 	if (newPassword !== rePassword) return { message: 'Passwords do not match', type: MessageType.Error };
 
 	try {
-		const { error } = await request.post({
-			url: 'auth/password/change',
+		const { error } = await openAPIClient.PATCH('/api/v1/users/me', {
 			body: {
-				password,
+				oldPassword: password,
 				newPassword
-			},
-			headers: {
-				authorization: `Bearer ${getToken()}`
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('me');
 		return { message: 'Password changed', type: MessageType.Success };
@@ -38,14 +33,12 @@ export const changePassword = async (_: any, form: FormData) => {
 
 export const requestNewApiKey = async (_: any, __: FormData) => {
 	try {
-		const { error } = await request.post({
-			url: 'auth/apikey/change',
-			headers: {
-				authorization: `Bearer ${getToken()}`
-			}
+		const { error } = await openAPIClient.POST('/api/v1/users/me/regenerate-api-key', {
+			// @ts-expect-error schema is wrong, we need an empty body
+			body: {}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('me');
 		return { message: 'API key regenerated', type: MessageType.Success };

@@ -1,59 +1,50 @@
 import type { Metadata } from 'next';
 import type { MetadataBuilder, PageQuery } from '@/types';
 
-import { fetchEndpoint } from '@/lib/fileFetching';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { FilesListNsfwToggle } from '@/components/FilesListNsfwToggle';
-import { notFound, redirect } from 'next/navigation';
-import request from '@/lib/request';
+import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
+import { openAPIClient } from '@/lib/serverFetch';
+import { ENV } from '@/util/env';
 
-export async function generateMetadata({
-	searchParams,
-	params
-}: {
-	readonly params: { identifier: string };
-	readonly searchParams: PageQuery;
-}): Promise<Metadata> {
-	const currentPage = searchParams.page ?? 1;
-	const perPage = searchParams.limit ? (searchParams.limit > 50 ? 50 : searchParams.limit) : 50;
-	const search = searchParams.search ?? '';
-
-	const { data: response, error } = await fetchEndpoint(
-		{ type: 'publicAlbum', identifier: params.identifier },
-		currentPage,
-		perPage,
-		search
-	);
+export async function generateMetadata({ params }: { readonly params: { identifier: string } }): Promise<Metadata> {
+	const { data, error } = await openAPIClient.GET('/api/v1/folders/public/{shareIdentifier}', {
+		params: {
+			path: {
+				shareIdentifier: params.identifier
+			}
+		}
+	});
 
 	if (error) {
 		return {};
 	}
 
 	const meta = {
-		title: response.album.isNsfw ? `[nsfw] ${response.album.name}` : response.album.name,
+		title: data.isNSFW ? `[nsfw] ${data.name}` : data.name,
 		openGraph: {
-			title: response.album.isNsfw ? `[nsfw] ${response.album.name}` : response.album.name,
-			images: [response.album.isNsfw ? '/og?section=nsfw-album' : '/og?section=album']
+			title: data.isNSFW ? `[nsfw] ${data.name}` : data.name,
+			images: [data.isNSFW ? '/og?section=nsfw-album' : '/og?section=album']
 		},
 		twitter: {
-			title: response.album.isNsfw ? `[nsfw] ${response.album.name}` : response.album.name,
-			images: [response.album.isNsfw ? '/og?section=nsfw-album' : '/og?section=album']
+			title: data.isNSFW ? `[nsfw] ${data.name}` : data.name,
+			images: [data.isNSFW ? '/og?section=nsfw-album' : '/og?section=album']
 		}
 	} as MetadataBuilder;
 
-	if (response.album.description) {
-		meta.description = response.album.description;
-		meta.openGraph.description = response.album.description;
-		meta.twitter.description = response.album.description;
+	if (data.description) {
+		meta.description = data.description;
+		meta.openGraph.description = data.description;
+		meta.twitter.description = data.description;
 	}
 
-	if (!response.album.isNsfw && response.album.cover) {
-		meta.openGraph.images = [response.album.cover];
-		meta.twitter.images = [response.album.cover];
+	if (!data.isNSFW && data.coverImage) {
+		meta.openGraph.images = [`${ENV.BASE_API_URL}/thumbnails/${data.coverImage.identifier}.webp`];
+		meta.twitter.images = [`${ENV.BASE_API_URL}/thumbnails/${data.coverImage.identifier}.webp`];
 	}
 
 	return meta;
@@ -71,40 +62,57 @@ export default async function PublicAlbumPage({
 	const search = searchParams.search ?? '';
 
 	const {
-		data: response,
+		data: albumData,
 		error,
-		status
-	} = await fetchEndpoint({ type: 'publicAlbum', identifier: params.identifier }, currentPage, perPage, search);
+		response
+	} = await openAPIClient.GET('/api/v1/folders/public/{shareIdentifier}', {
+		params: {
+			path: {
+				shareIdentifier: params.identifier
+			}
+		}
+	});
 
-	if (error) {
-		if (status === 401) return redirect('/login');
-		if (status === 404) return notFound();
-		redirect('/');
+	if (response.status === 404) {
+		return notFound();
 	}
 
-	try {
-		await request.get({
-			url: `album/${params.identifier}/view/count`,
-			options: {
-				cache: 'no-cache'
+	if (error) {
+		return <div>Error: {error.message}</div>;
+	}
+
+	const { data, error: filesError } = await openAPIClient.GET('/api/v1/folders/public/{shareIdentifier}/files', {
+		params: {
+			path: {
+				shareIdentifier: params.identifier
+			},
+			query: {
+				offset: currentPage - 1,
+				limit: perPage,
+				search
 			}
-		});
-	} catch {}
+		}
+	});
+
+	if (filesError) {
+		return <div>Error: {filesError.message}</div>;
+	}
 
 	return (
 		<>
-			<DashboardHeader title={response.album.name} subtitle={response.album.description} />
+			<DashboardHeader title={albumData.name} subtitle={albumData.description ?? ''} />
 			<div className="px-2 w-full flex h-full flex-grow flex-col">
-				<FilesListNsfwToggle nsfw={response.album.isNsfw}>
+				<FilesListNsfwToggle nsfw={albumData.isNSFW}>
 					<div className="grid gap-4">
 						<Suspense>
-							<Pagination itemsTotal={response.album.count} type="publicAlbum" />
+							<Pagination itemsTotal={data.count} type="publicAlbum" />
 							<FilesWrapper
-								files={response.album.files}
-								total={response.album.count}
+								// @ts-expect-error partial type
+								files={data.results}
+								total={data.count}
 								type="publicAlbum"
 							/>
-							<Pagination itemsTotal={response.album.count} type="publicAlbum" />
+							<Pagination itemsTotal={data.count} type="publicAlbum" />
 						</Suspense>
 						<FileDialog />
 					</div>

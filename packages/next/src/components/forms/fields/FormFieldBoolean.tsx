@@ -1,6 +1,6 @@
-import type { Setting } from '@/types';
 import { FormControl, FormDescription, FormField, FormItem, FormLabel } from '../../ui/form';
 import { Switch } from '../../ui/switch';
+import type { Setting } from '../SettingsForm';
 
 export const FormFieldBoolean = ({ form, data }: { readonly data: Setting; readonly form: any }) => {
 	return (

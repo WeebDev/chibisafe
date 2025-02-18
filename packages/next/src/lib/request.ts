@@ -44,6 +44,8 @@ const request = {
 
 			if (typeof window !== 'undefined') queryUrl = `/api/${url}`;
 
+			console.log('queryUrl', queryUrl);
+
 			// Check if we are passing any arguments and parse them if so
 			if (Object.keys(query).length) {
 				queryUrl += `?${new URLSearchParams(query)}`;

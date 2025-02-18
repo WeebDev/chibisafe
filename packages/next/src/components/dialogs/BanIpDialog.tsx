@@ -1,29 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useActionState } from 'react';
 import { MessageType } from '@/types';
-import { Plus } from 'lucide-react';
-import { useFormState } from 'react-dom';
 import { toast } from 'sonner';
-
 import { Button } from '@/components/ui/button';
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { banIp } from '@/actions/IpActions';
 import { Textarea } from '../ui/textarea';
+import { DialogContainer } from '@/components/dialogs/DialogContainer';
 
-export function BanIpDialog({ className }: { readonly className?: string }) {
+export function BanIpDialog() {
 	const [open, setOpen] = useState(false);
-	const [state, formAction] = useFormState(banIp, {
+	return (
+		<DialogContainer
+			button="Ban new IP"
+			title="Ban new IP"
+			description="The submitted IP will be banned and won't be able to use the service until unbanned."
+			open={open}
+			onOpenChange={setOpen}
+		>
+			<Form onSuccess={() => setOpen(false)} />
+		</DialogContainer>
+	);
+}
+
+const Form = ({ onSuccess }: { onSuccess(): void }) => {
+	const [state, formAction] = useActionState(banIp, {
 		message: '',
 		type: MessageType.Uninitialized
 	});
@@ -32,7 +35,7 @@ export function BanIpDialog({ className }: { readonly className?: string }) {
 		if (state.type === MessageType.Error) toast.error(state.message);
 		else if (state.type === MessageType.Success) {
 			toast.success(state.message);
-			setOpen(false);
+			onSuccess?.();
 		}
 
 		return () => {
@@ -41,46 +44,23 @@ export function BanIpDialog({ className }: { readonly className?: string }) {
 				state.message = '';
 			}
 		};
-	}, [state, state.message, state.type]);
+	}, [onSuccess, state, state.message, state.type]);
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button className={className}>
-					<Plus className="mr-2 h-4 w-4" />
-					Ban new IP
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="w-11/12">
-				<form action={formAction}>
-					<DialogHeader>
-						<DialogTitle>Ban new IP</DialogTitle>
-						<DialogDescription>
-							The submitted IP will be banned and won't be able to use the service until unbanned.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="grid gap-4 mb-4">
-						<div className="grid gap-4 mt-4">
-							<div>
-								<Label htmlFor="ip">IP</Label>
-								<Input id="ip" name="ip" placeholder="127.0.0.69" className="col-span-3" />
-							</div>
-							<div>
-								<Label htmlFor="reason">Reason</Label>
-								<Textarea
-									id="reason"
-									name="reason"
-									placeholder="Reason for ban"
-									className="col-span-4"
-								/>
-							</div>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button type="submit">Submit</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
+		<form action={formAction}>
+			<div className="flex flex-col gap-4 my-4">
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="ip">IP</Label>
+					<Input id="ip" name="ip" placeholder="127.0.0.69" className="col-span-3" />
+				</div>
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="reason">Reason</Label>
+					<Textarea id="reason" name="reason" placeholder="Reason for ban" className="col-span-4" />
+				</div>
+			</div>
+			<div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+				<Button type="submit">Submit</Button>
+			</div>
+		</form>
 	);
-}
+};

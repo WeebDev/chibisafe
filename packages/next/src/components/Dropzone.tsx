@@ -39,7 +39,7 @@ export const GlobalDropZone = (props: DropZonePropsWithAlbumUuid) => {
 						uploadQueue.add(async () =>
 							uploadFile({
 								file: file instanceof File ? file : await file.getFile(),
-								endpoint: '/api/upload',
+								endpoint: `api/v1/upload`,
 								isNetworkStored: false,
 								method: 'POST'
 							})
@@ -90,7 +90,7 @@ export const GlobalDropZone = (props: DropZonePropsWithAlbumUuid) => {
 						uploadQueue.add(async () =>
 							uploadFile({
 								file: file instanceof File ? file : await file.getFile(),
-								endpoint: '/api/upload',
+								endpoint: 'api/v1/upload',
 								isNetworkStored: false,
 								method: 'POST'
 							})

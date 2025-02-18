@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import type { ColumnFiltersState, RowData, SortingState, VisibilityState } from '@tanstack/react-table';
+import type { ColumnFiltersState, SortingState, VisibilityState } from '@tanstack/react-table';
 import {
 	createColumnHelper,
 	getCoreRowModel,
@@ -18,65 +18,63 @@ import { FileInformationDialogActions } from '@/components/FileInformationDialog
 import { formatBytes } from '@/lib/file';
 import { FileThumbnail } from '@/components/FileThumbnail';
 import Link from 'next/link';
-
-declare module '@tanstack/table-core' {
-	interface TableMeta<TData extends RowData> {
-		isAdmin?: boolean;
-		type?: FilePropsType;
-	}
-}
+import { ENV } from '@/util/env';
 
 const columnHelper = createColumnHelper<FileWithIndex>();
 const columns = [
-	columnHelper.accessor(row => row.thumb, {
+	columnHelper.accessor(row => row.identifier, {
 		id: 'thumbnail',
 		header: 'Preview',
 		cell: props => (
 			<FileThumbnail file={props.row.original} isTableView type={props.table.options.meta?.type ?? 'uploads'} />
 		)
 	}),
-	columnHelper.accessor(row => row.url, {
+	columnHelper.accessor(row => row.filename, {
 		id: 'link',
 		header: 'Link',
 		cell: props => (
-			<a href={props.row.original.url} className="text-blue-500 underline inline-flex items-center">
-				{props.row.original.name} <ArrowUpRightFromSquare className="w-3 h-3 ml-1" />
+			<a
+				href={`${ENV.BASE_API_URL}/${props.row.original.filename}`}
+				className="text-blue-500 underline inline-flex items-center"
+			>
+				{props.row.original.filename} <ArrowUpRightFromSquare className="w-3 h-3 ml-1" />
 			</a>
 		)
 	}),
-	columnHelper.accessor(row => row.original, {
+	columnHelper.accessor(row => row.fileMetadata.originalFilename, {
 		id: 'original',
 		header: 'Original',
 		cell: props => (
 			<a
-				href={`/api/file/${props.row.original.uuid}/download`}
+				href={`${ENV.BASE_API_URL}/api/v1/files/${props.row.original.uuid}/download`}
 				className="text-blue-500 underline inline-flex items-center break-all"
 			>
-				{props.row.original.original} <ArrowDownToLineIcon className="w-4 h-4 ml-1" />
+				{props.row.original.fileMetadata.originalFilename} <ArrowDownToLineIcon className="w-4 h-4 ml-1" />
 			</a>
 		)
 	}),
-	columnHelper.accessor(row => row.user, {
-		id: 'user',
-		header: 'Owner',
-		enableHiding: true,
-		cell: props => {
-			if (props.table.options.meta?.type !== 'admin') {
-				props.column.toggleVisibility(false);
-				return;
-			}
+	// TODO: Not implemented yet
+	// columnHelper.accessor(row => row.user, {
+	// 	id: 'user',
+	// 	header: 'Owner',
+	// 	enableHiding: true,
+	// 	cell: props => {
+	// 		if (props.table.options.meta?.type !== 'admin') {
+	// 			props.column.toggleVisibility(false);
+	// 			return;
+	// 		}
 
-			return (
-				<Link
-					href={`/dashboard/admin/users/${props.row.original.user?.uuid}`}
-					className="text-blue-500 underline inline-flex items-center"
-				>
-					{props.row.original.user?.username}
-				</Link>
-			);
-		}
-	}),
-	columnHelper.accessor(row => row.size, {
+	// 		return (
+	// 			<Link
+	// 				href={`/dashboard/admin/users/${props.row.original.user?.uuid}`}
+	// 				className="text-blue-500 underline inline-flex items-center"
+	// 			>
+	// 				{props.row.original.user?.username}
+	// 			</Link>
+	// 		);
+	// 	}
+	// }),
+	columnHelper.accessor(row => row.fileMetadata.size, {
 		id: 'size',
 		header: ({ column }) => {
 			return (

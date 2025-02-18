@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { ChibisafeLogo } from '@/components/svg/ChibisafeLogo';
 import { buttonVariants } from '@/styles/button';
-import request from '@/lib/request';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const metadata: Metadata = {
 	title: 'Create an account',
@@ -14,18 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LoginPage() {
-	const { data: settings, error } = await request.get({
-		url: 'settings',
-		options: {
-			next: {
-				tags: ['settings']
-			}
-		}
-	});
-
-	if (error || !settings) {
-		console.log(error);
-	}
+	const { data } = await openAPIClient.GET('/api/v1/settings');
 
 	return (
 		<div className="container flex h-screen w-screen flex-col items-center justify-center">
@@ -47,12 +36,12 @@ export default async function LoginPage() {
 				<div className="flex flex-col space-y-2 text-center">
 					<ChibisafeLogo className="mx-auto mb-4 h-64 w-64" />
 					<h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
-					{settings?.userAccounts ? (
+					{data?.registrationEnabled.value ? (
 						<p className="text-sm text-muted-foreground">Enter your email below to create an account</p>
 					) : null}
 				</div>
 
-				{settings?.userAccounts ? (
+				{data?.registrationEnabled.value ? (
 					<RegisterForm />
 				) : (
 					<div className="flex flex-col gap-2 text-center">

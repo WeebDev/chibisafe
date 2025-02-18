@@ -1,21 +1,16 @@
 'use server';
 
 import { MessageType } from '@/types';
-import request from '@/lib/request';
-import { getToken } from './utils';
 import { revalidateTag } from 'next/cache';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const regenerateThumbnails = async (uuids: string[]) => {
 	try {
-		const { error } = await request.post({
-			url: 'files/thumbnail/regenerate',
-			body: { files: uuids },
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		await openAPIClient.POST('/api/v1/files/bulk-regenerate-thumbnails', {
+			body: {
+				uuids
 			}
 		});
-
-		if (error) return { message: error, type: MessageType.Error };
 
 		revalidateTag('files');
 		return {
@@ -27,18 +22,15 @@ export const regenerateThumbnails = async (uuids: string[]) => {
 	}
 };
 
-export const deleteFiles = async (uuids: string[], type: string) => {
+export const deleteFiles = async (uuids: string[]) => {
 	try {
-		const { error } = await request.post({
-			url:
-				type === 'admin' ? 'admin/files/delete' : type === 'quarantine' ? 'admin/files/delete' : 'files/delete',
-			body: { files: uuids },
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		// If the user is admin it changes nothing, same endpoint.
+		// If the user is not admin it will only delete the files that the user owns.
+		await openAPIClient.POST('/api/v1/files/bulk-delete', {
+			body: {
+				uuids
 			}
 		});
-
-		if (error) return { message: error, type: MessageType.Error };
 
 		revalidateTag('files');
 		return { message: `${uuids.length} ${uuids.length > 1 ? 'files' : 'file'} removed`, type: MessageType.Success };
@@ -49,15 +41,11 @@ export const deleteFiles = async (uuids: string[], type: string) => {
 
 export const quarantineFiles = async (uuids: string[]) => {
 	try {
-		const { error } = await request.post({
-			url: 'admin/files/quarantine',
-			body: { files: uuids },
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		await openAPIClient.POST('/api/v1/files/bulk-quarantine', {
+			body: {
+				uuids
 			}
 		});
-
-		if (error) return { message: error, type: MessageType.Error };
 
 		revalidateTag('files');
 		return {
@@ -71,18 +59,17 @@ export const quarantineFiles = async (uuids: string[]) => {
 
 export const unquarantineFiles = async (uuids: string[]) => {
 	try {
-		const { error } = await request.post({
-			url: 'admin/files/allow',
-			body: { files: uuids },
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		await openAPIClient.POST('/api/v1/files/bulk-unquarantine', {
+			body: {
+				uuids
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
-
 		revalidateTag('files');
-		return { message: `${uuids.length} ${uuids.length > 1 ? 'files' : 'file'} allowed`, type: MessageType.Success };
+		return {
+			message: `${uuids.length} ${uuids.length > 1 ? 'files' : 'file'} unquarantined`,
+			type: MessageType.Success
+		};
 	} catch (error: any) {
 		return { message: error, type: MessageType.Error };
 	}

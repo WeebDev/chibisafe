@@ -3,9 +3,9 @@
 import { useSetAtom } from 'jotai';
 
 import { settingsAtom } from '@/lib/atoms/settings';
-import request from '@/lib/request';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
+import { openAPIClient } from '@/lib/clientFetch';
 
 export function SettingsProvider() {
 	const setSettings = useSetAtom(settingsAtom);
@@ -13,27 +13,15 @@ export function SettingsProvider() {
 	useQuery({
 		queryKey: ['settings'],
 		queryFn: async () => {
-			const {
-				data: response,
-				error,
-				status
-			} = await request.get({
-				url: 'settings',
-				options: {
-					next: {
-						tags: ['settings']
-					}
-				}
-			});
+			const { data, error, response } = await openAPIClient.GET('/api/v1/settings');
 
-			if (error && status === 401) {
-				toast.error(error);
+			if (error && response.status === 401) {
+				toast.error(error.message);
 				return;
 			}
 
-			setSettings(response);
-
-			return response;
+			setSettings(data ?? null);
+			return data;
 		}
 	});
 

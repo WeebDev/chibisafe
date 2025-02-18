@@ -1,6 +1,6 @@
 import { AlbumMasonry } from '@/components/AlbumMasonry';
 import { Pagination } from '@/components/Pagination';
-import request from '@/lib/request';
+import { openAPIClient } from '@/lib/serverFetch';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -17,35 +17,24 @@ export async function AlbumPage({
 	const token = cookiesStore.get('token')?.value;
 	if (!token) redirect('/');
 
-	const {
-		data: response,
-		error,
-		status
-	} = await request.get({
-		url: 'albums',
-		query: {
-			page,
-			limit,
-			search
-		},
-		headers: {
-			authorization: `Bearer ${token}`
-		},
-		options: {
-			next: {
-				tags: ['albums']
+	const { data, response } = await openAPIClient.GET('/api/v1/folders', {
+		params: {
+			query: {
+				offset: page - 1,
+				limit,
+				search
 			}
 		}
 	});
 
-	if (error && status === 401) {
+	if (response.status === 401) {
 		redirect('/login');
 	}
 
 	return (
 		<>
-			<Pagination itemsTotal={response?.count} />
-			<AlbumMasonry albums={response?.albums} />
+			<Pagination itemsTotal={data?.count} />
+			<AlbumMasonry albums={data?.results} />
 		</>
 	);
 }

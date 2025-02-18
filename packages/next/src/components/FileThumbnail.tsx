@@ -1,11 +1,14 @@
 'use client';
 
+import type { FileWithFileMetadataAndIndex } from '@/lib/atoms/fileDialog';
 import { selectedFileAtom, isDialogOpenAtom } from '@/lib/atoms/fileDialog';
 import { isFileImage, isFileVideo, isFileAudio, isFilePDF } from '@/lib/file';
 import { cn } from '@/lib/utils';
-import type { FilePropsType, FileWithIndex } from '@/types';
+import type { FilePropsType } from '@/types';
+import { ENV } from '@/util/env';
 import { useSetAtom } from 'jotai';
 import { FileWarning, Video, FileAudio, FileText, FileIcon } from 'lucide-react';
+import Image from 'next/image';
 import { useState, type PropsWithChildren } from 'react';
 
 const ComponentType = ({
@@ -14,7 +17,7 @@ const ComponentType = ({
 	file,
 	type
 }: PropsWithChildren<{
-	readonly file?: FileWithIndex;
+	readonly file?: FileWithFileMetadataAndIndex;
 	readonly isTableView?: boolean;
 	readonly type: FilePropsType;
 }>) => {
@@ -50,7 +53,7 @@ export const FileThumbnail = ({
 	isTableView = false,
 	type
 }: {
-	readonly file: FileWithIndex;
+	readonly file: FileWithFileMetadataAndIndex;
 	readonly hoveredFiles?: string[];
 	readonly isTableView?: boolean;
 	readonly type: FilePropsType;
@@ -61,24 +64,26 @@ export const FileThumbnail = ({
 		<div className={cn('flex flex-col justify-center items-center', isTableView ? '' : 'h-40 bg-dark-90')}>
 			<FileWarning className="text-red-500 w-16 h-16" />
 		</div>
-	) : (isFileImage(file) && !error) || (isFileVideo(file) && file.thumb && !error) ? (
+	) : (isFileImage(file) && !error) || (isFileVideo(file) && file.fileMetadata?.thumbnailWidth && !error) ? (
 		<ComponentType isTableView={isTableView} file={file} type={type}>
-			<picture>
-				<img
-					src={file.thumb}
-					className="cursor-pointer w-full sm:min-w-[160px] min-w-0"
-					onError={() => setError(true)}
-				/>
-			</picture>
+			<Image
+				unoptimized
+				src={`${ENV.BASE_API_URL}/thumbnails/${file.identifier}.webp`}
+				width={file.fileMetadata?.thumbnailWidth ?? 0}
+				height={file.fileMetadata?.thumbnailHeight ?? 0}
+				className="cursor-pointer w-full sm:min-w-[160px] min-w-0"
+				alt={file.identifier}
+				onError={() => setError(true)}
+			/>
 
-			{isFileVideo(file) && hoveredFiles.includes(file.uuid ?? file.name) && (
+			{isFileVideo(file) && hoveredFiles.includes(file.uuid ?? file.identifier) && (
 				<video
 					className="preview absolute top-0 left-0 w-full h-full pointer-events-none sm:min-w-[160px] min-w-0"
 					autoPlay
 					loop
 					muted
 				>
-					<source src={file.preview} type="video/mp4" />
+					<source src={`${ENV.BASE_API_URL}/thumbnails/${file.identifier}.webm`} type="video/webm" />
 				</video>
 			)}
 
@@ -95,13 +100,15 @@ export const FileThumbnail = ({
 				{isFileAudio(file) && <FileAudio className=" w-16 h-16" />}
 				{isFilePDF(file) && <FileText className=" w-16 h-16" />}
 				{!isFileAudio(file) && !isFilePDF(file) && <FileIcon className=" w-16 h-16" />}
-				{file.original ? (
+				{file.fileMetadata?.originalFilename ? (
 					<span className={cn('break-all w-[160px]', isTableView ? '' : 'mt-4 text-lg text-center')}>
-						{file.original.length > 60 ? `${file.original.slice(0, 40)}...` : file.original}
+						{file.fileMetadata.originalFilename.length > 60
+							? `${file.fileMetadata.originalFilename.slice(0, 40)}...`
+							: file.fileMetadata.originalFilename}
 					</span>
 				) : (
 					<span className={cn('break-all w-[160px]', isTableView ? '' : 'mt-4 text-lg text-center')}>
-						{file.name.length > 60 ? `${file.name.slice(0, 40)}...` : file.name}
+						{file.identifier.length > 60 ? `${file.identifier.slice(0, 40)}...` : file.identifier}
 					</span>
 				)}
 			</ComponentType>

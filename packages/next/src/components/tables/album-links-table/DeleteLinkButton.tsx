@@ -25,7 +25,7 @@ export const DeleteLinkButton = ({
 
 	useEffect(() => {
 		if (state.type === MessageType.Success) {
-			void queryClient.invalidateQueries({ queryKey: ['albums', albumUuid, 'links'] });
+			void queryClient.invalidateQueries({ queryKey: ['share', albumUuid] });
 		}
 	}, [state.type, queryClient, albumUuid]);
 

@@ -1,16 +1,15 @@
 'use client';
 
-import { useFormState } from 'react-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { changePassword } from '@/actions/AuthActions';
 import { MessageType } from '@/types';
-import { useEffect } from 'react';
+import { useEffect, useActionState } from 'react';
 import { toast } from 'sonner';
 
 export const ChangePassword = () => {
-	const [state, formAction] = useFormState(changePassword, {
+	const [state, formAction] = useActionState(changePassword, {
 		message: '',
 		type: MessageType.Uninitialized
 	});

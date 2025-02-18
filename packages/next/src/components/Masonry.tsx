@@ -2,17 +2,18 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { File, FilePropsType, FileWithIndex } from '@/types';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import type { FilePropsType } from '@/types';
+import { useAtom, useSetAtom } from 'jotai';
+import type { FileWithFileMetadataAndIndex } from '@/lib/atoms/fileDialog';
 import { isDialogOpenAtom, selectedFileAtom } from '@/lib/atoms/fileDialog';
 import { isFileVideo } from '@/lib/file';
 import { cn } from '@/lib/utils';
 import { Masonry as Plock } from '@/components/ui/plock';
 import { FileThumbnail } from './FileThumbnail';
-import { useLongPress } from '@uidotdev/usehooks';
 import { selectedFilesAtom, selectionActiveAtom } from '@/lib/atoms/selectedFiles';
 import { CircleCheckIcon, CircleIcon } from 'lucide-react';
 import { Button } from './ui/button';
+import { ENV } from '@/util/env';
 
 function FileItem({
 	file,
@@ -21,7 +22,7 @@ function FileItem({
 	hoveredFiles,
 	setHoveredFiles
 }: {
-	readonly file: FileWithIndex;
+	readonly file: FileWithFileMetadataAndIndex;
 	readonly hoveredFiles: string[];
 	readonly idx: number;
 	setHoveredFiles(files: string[]): void;
@@ -30,12 +31,12 @@ function FileItem({
 	const setModalOpen = useSetAtom(isDialogOpenAtom);
 	const setSelectedFile = useSetAtom(selectedFileAtom);
 	const [selectedFiles, setSelectedFiles] = useAtom(selectedFilesAtom);
-	const isSelectionActive = useAtomValue(selectionActiveAtom);
+	const [isSelectionActive, setIsSelectionActive] = useAtom(selectionActiveAtom);
 	const isSelected = useMemo(() => selectedFiles.includes(file), [selectedFiles, file]);
 
 	const addToHoveredList = useCallback(
-		(file: File) => {
-			const identifierToUse = file.uuid ?? file.name;
+		(file: FileWithFileMetadataAndIndex) => {
+			const identifierToUse = file.uuid ?? file.identifier;
 			if (hoveredFiles.includes(identifierToUse)) return;
 			setHoveredFiles([...hoveredFiles, identifierToUse]);
 		},
@@ -43,8 +44,8 @@ function FileItem({
 	);
 
 	const removeFromHoveredList = useCallback(
-		(file: File) => {
-			const identifierToUse = file.uuid ?? file.name;
+		(file: FileWithFileMetadataAndIndex) => {
+			const identifierToUse = file.uuid ?? file.identifier;
 			if (!hoveredFiles.includes(identifierToUse)) return;
 			setHoveredFiles(hoveredFiles.filter(file => file !== identifierToUse));
 		},
@@ -58,29 +59,17 @@ function FileItem({
 
 		if (isSelected) {
 			setSelectedFiles(selectedFiles.filter(f => f !== file));
+			if (selectedFiles.length === 1) {
+				setIsSelectionActive(false);
+			}
 		} else {
+			if (!selectedFiles.length) {
+				setIsSelectionActive(true);
+			}
+
 			setSelectedFiles([...selectedFiles, file]);
 		}
-	}, [file, isSelected, selectedFiles, setSelectedFiles, type]);
-
-	const attrs = useLongPress(
-		e => {
-			// console.log('long press', e);
-			canFileCanBeSelected();
-		},
-		{
-			// onStart: e => {
-			// 	console.log('Press started');
-			// },
-			// onFinish: e => {
-			// 	console.log('Press finished');
-			// },
-			// onCancel: e => {
-			// 	console.log('Press cancelled');
-			// },
-			threshold: 500
-		}
-	);
+	}, [file, isSelected, selectedFiles, setIsSelectionActive, setSelectedFiles, type]);
 
 	return (
 		<div
@@ -138,11 +127,10 @@ function FileItem({
 					'pointer-events-none': file.quarantine && type !== 'quarantine',
 					hidden: isSelectionActive
 				})}
-				href={file.url}
+				href={`${ENV.BASE_API_URL}/${file.filename}`}
 				target="_blank"
 				rel="noopener noreferrer"
 				draggable={false}
-				{...attrs}
 				style={{ WebkitTouchCallout: 'none' }}
 				onClick={e => {
 					e.preventDefault();
@@ -158,6 +146,11 @@ function FileItem({
 			/>
 
 			<FileThumbnail file={file} hoveredFiles={hoveredFiles} type={type} />
+			{file.isOwner ? null : (
+				<div className="absolute top-0 w-full flex items-center justify-center bg-[rgb(4_21_47_/_0.8)] p-1">
+					Guest
+				</div>
+			)}
 		</div>
 	);
 }
@@ -166,7 +159,7 @@ export function Masonry({
 	files,
 	type
 }: {
-	readonly files?: FileWithIndex[] | undefined;
+	readonly files?: FileWithFileMetadataAndIndex[] | undefined;
 	readonly type: FilePropsType;
 }) {
 	const [hoveredFiles, setHoveredFiles] = useState<string[]>([]);

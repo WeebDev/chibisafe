@@ -9,16 +9,19 @@ export const GlobalAdminNotice = () => {
 	const settings = useAtomValue(settingsAtom);
 	const currentUser = useAtomValue(currentUserAtom);
 
-	if (settings?.serveUploadsFrom || !currentUser?.roles.some(role => role.name === 'admin')) {
-		return null;
+	if (
+		currentUser?.permissions.canManageSettings &&
+		(!settings?.siteUrl.value || settings.siteUrl.value === 'https://your-domain.com')
+	) {
+		return (
+			<div className="bg-yellow-700 text-white p-2 text-center text-sm">
+				Files and thumbnails will be broken until you add your full domain in{' '}
+				<Link href="/dashboard/admin/settings" className="underline">
+					Settings {'>'} Service {'>'} Site Url
+				</Link>
+			</div>
+		);
 	}
 
-	return (
-		<div className="bg-yellow-700 text-white p-2 text-center text-sm">
-			Files and thumbnails will be broken until you add your full domain in{' '}
-			<Link href="/dashboard/admin/settings" className="underline">
-				Settings {'>'} Service {'>'} Serve uploads from
-			</Link>
-		</div>
-	);
+	return null;
 };

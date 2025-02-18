@@ -10,17 +10,16 @@ import {
 } from '@tanstack/react-table';
 import { useState, type PropsWithChildren } from 'react';
 import { ArrowUpRightFromSquare } from 'lucide-react';
-import { DataTable } from '../DataTable';
-import type { AlbumLink } from '@/types';
-import { DeleteLinkButton } from './DeleteLinkButton';
-import { AlbumLinksToggleAction } from './AlbumLinksToggleAction';
+import { DataTable } from '@/components/tables/DataTable';
+import { DeleteLinkButton } from '@/components/tables/album-links-table/DeleteLinkButton';
+
+type AlbumLink = {
+	identifier: string;
+	uuid: string;
+};
 
 const columnHelper = createColumnHelper<AlbumLink>();
 const columns = [
-	columnHelper.accessor(row => row.views, {
-		id: 'views',
-		header: 'Views'
-	}),
 	columnHelper.display({
 		id: 'link',
 		header: 'Link',
@@ -31,29 +30,20 @@ const columns = [
 		)
 	}),
 	columnHelper.display({
-		id: 'enabled',
-		header: 'Enabled',
-		cell: props => (
-			<AlbumLinksToggleAction
-				key={props.row.original.uuid}
-				uuid={props.row.original.uuid}
-				albumUuid={props.row.original.albumUuid}
-				initialEnabled={props.row.original.enabled}
-			/>
-		)
-	}),
-	columnHelper.display({
 		id: 'actions',
 		header: '',
 		cell: props => (
 			<div className="flex justify-end">
-				<DeleteLinkButton uuid={props.row.original.uuid} albumUuid={props.row.original.albumUuid} />
+				<DeleteLinkButton uuid={props.row.original.uuid} albumUuid={props.table.options.meta!.albumUuid!} />
 			</div>
 		)
 	})
 ];
 
-export const AlbumLinksTable = ({ data = [] }: PropsWithChildren<{ readonly data?: any | undefined }>) => {
+export const AlbumLinksTable = ({
+	data = [],
+	albumUuid
+}: PropsWithChildren<{ readonly albumUuid: string; readonly data?: AlbumLink[] | undefined }>) => {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -71,6 +61,9 @@ export const AlbumLinksTable = ({ data = [] }: PropsWithChildren<{ readonly data
 			sorting,
 			columnFilters,
 			columnVisibility
+		},
+		meta: {
+			albumUuid
 		}
 	});
 

@@ -12,13 +12,13 @@ import { useState, type PropsWithChildren } from 'react';
 import { formatBytes } from '@/lib/file';
 import { Badge } from '../../ui/badge';
 import { UserTableActions } from './UserTableActions';
-import type { UserWithCountAndQuota } from '@/types';
 import { ArrowUpDown } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { DataTable } from '../DataTable';
 import Link from 'next/link';
+import type { UserWithRolesAndQuota } from '@/types';
 
-const columnHelper = createColumnHelper<UserWithCountAndQuota>();
+const columnHelper = createColumnHelper<UserWithRolesAndQuota>();
 const columns = [
 	columnHelper.accessor(row => row.username, {
 		id: 'username',
@@ -32,7 +32,7 @@ const columns = [
 			</Link>
 		)
 	}),
-	columnHelper.accessor(row => row._count.files, {
+	columnHelper.accessor(row => row.filesCount, {
 		id: 'files',
 		header: ({ column }) => {
 			return (
@@ -65,7 +65,7 @@ const columns = [
 			</div>
 		)
 	}),
-	columnHelper.accessor(row => row.storageQuota.used, {
+	columnHelper.accessor(row => row.storageQuotaUsed, {
 		id: 'used',
 		header: ({ column }) => {
 			return (
@@ -77,7 +77,7 @@ const columns = [
 		},
 		cell: props => <span>{formatBytes(props.getValue())}</span>
 	}),
-	columnHelper.accessor(row => (row.storageQuota.quota ? formatBytes(row.storageQuota.quota) : 'Unlimited'), {
+	columnHelper.accessor(row => (row.storageQuota === -1 ? 'Unlimited' : formatBytes(row.storageQuota)), {
 		id: 'limit',
 		header: 'Limit'
 	}),
@@ -91,7 +91,7 @@ const columns = [
 				</Button>
 			);
 		},
-		cell: props => <span>{new Date(props.getValue()).toLocaleDateString()}</span>
+		cell: props => <span>{new Date(props.getValue().toString()).toLocaleDateString()}</span>
 	}),
 	columnHelper.display({
 		id: 'actions',

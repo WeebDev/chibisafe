@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 import { ImageResponse } from 'next/og';
-import fetchRequest from '@/lib/request';
 import { ChibisafeDefaultLogo } from '@/components/svg/ChibisafeLogo';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const contentType = 'image/jpeg';
 export const runtime = 'edge';
@@ -24,15 +24,7 @@ export async function GET(request: Request) {
 	const url = new URL(request.url);
 	const section = url.searchParams.get('section') ?? null;
 
-	const { data, error } = await fetchRequest.get({
-		url: 'settings',
-		options: {
-			next: {
-				tags: ['settings']
-			}
-		}
-	});
-
+	const { data, error } = await openAPIClient.GET('/api/v1/settings');
 	if (error) {
 		return null;
 	}
@@ -40,10 +32,10 @@ export async function GET(request: Request) {
 	return new ImageResponse(
 		(
 			<div tw="flex flex-col w-full h-full items-center justify-center relative">
-				{data.backgroundImageURL ? (
+				{data.siteBackgroundUrl.value ? (
 					<div
 						style={{
-							backgroundImage: `url(${data.backgroundImageURL})`,
+							backgroundImage: `url(${data.siteBackgroundUrl.value})`,
 							position: 'absolute',
 							backgroundRepeat: 'no-repeat',
 							backgroundPosition: 'center',
@@ -77,9 +69,9 @@ export async function GET(request: Request) {
 				)}
 				{section ? (
 					<div tw="flex absolute bottom-12 left-12 items-center">
-						{data.logoURL ? (
+						{data.siteLogoUrl.value ? (
 							<picture>
-								<img tw="w-44 h-44" src={data.logoURL} />
+								<img tw="w-44 h-44" src={data.siteLogoUrl.value} />
 							</picture>
 						) : (
 							<ChibisafeDefaultLogo width="175px" height="184px" />
@@ -91,7 +83,7 @@ export async function GET(request: Request) {
 								fontFamily: 'CalSans'
 							}}
 						>
-							{data.serviceName}
+							{data.siteName.value}
 						</h1>
 						<h2 tw="text-[100px] text-white ml-4 pt-6 tracking-tighter" style={{ fontFamily: 'Inter' }}>
 							{section?.split('-').join(' ')}
@@ -99,9 +91,9 @@ export async function GET(request: Request) {
 					</div>
 				) : (
 					<div tw="flex w-full justify-center items-center flex-col">
-						{data.logoURL ? (
+						{data.siteLogoUrl.value ? (
 							<picture tw="mt-4">
-								<img tw="w-52 h-52" src={data.logoURL} />
+								<img tw="w-52 h-52" src={data.siteLogoUrl.value} />
 							</picture>
 						) : (
 							<picture tw="mt-4">
@@ -109,7 +101,7 @@ export async function GET(request: Request) {
 							</picture>
 						)}
 						<h1 tw="text-[100px] text-white" style={{ fontFamily: 'CalSans' }}>
-							{data.serviceName}
+							{data.siteName.value}
 						</h1>
 					</div>
 				)}

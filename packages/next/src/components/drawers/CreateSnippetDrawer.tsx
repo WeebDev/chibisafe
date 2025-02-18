@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useActionState } from 'react';
 import { MessageType } from '@/types';
 import { Plus } from 'lucide-react';
-import { useFormState } from 'react-dom';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,7 @@ import { createSnippet } from '@/actions/SnippetActions';
 
 export function CreateSnippetDrawer({ className }: { readonly className?: string }) {
 	const [open, setOpen] = useState(false);
-	const [state, formAction] = useFormState(createSnippet, {
+	const [state, formAction] = useActionState(createSnippet, {
 		message: '',
 		type: MessageType.Uninitialized
 	});

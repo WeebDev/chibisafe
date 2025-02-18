@@ -1,5 +1,7 @@
-import request from '@/lib/request';
-import type { File, FilePropsType } from '@/types';
+'use client';
+
+import { openAPIClient } from '@/lib/clientFetch';
+import type { FilePropsType } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 
 export const useUploadsQuery = ({
@@ -18,7 +20,7 @@ export const useUploadsQuery = ({
 	const isUploads = type === 'uploads';
 	const isAlbumUploads = type === 'album' && Boolean(albumUuid);
 
-	return useQuery<{ count: number; files: File[] }>({
+	return useQuery({
 		enabled: isUploads || isAlbumUploads,
 		queryKey: isUploads
 			? [
@@ -31,24 +33,26 @@ export const useUploadsQuery = ({
 				]
 			: ['album', albumUuid, { currentPage, perPage, search }],
 		queryFn: async () => {
-			const {
-				data: response,
-				error,
-				status
-			} = await request.get({
-				url: isUploads ? 'files' : `album/${albumUuid}`,
-				query: {
-					page: currentPage,
-					limit: perPage,
-					search
+			const { data, error, response } = await openAPIClient.GET(
+				isUploads ? '/api/v1/files' : '/api/v1/folders/{uuid}/files',
+				{
+					// @ts-ignore
+					params: {
+						...(isUploads ? {} : { path: { uuid: albumUuid! } }),
+						query: {
+							offset: currentPage - 1,
+							limit: perPage,
+							search
+						}
+					}
 				}
-			});
+			);
 
-			if (error && status === 401) {
-				throw new Error(error);
+			if (error && response.status === 401) {
+				throw new Error(error.message);
 			}
 
-			return response;
+			return data;
 		}
 	});
 };

@@ -1,4 +1,5 @@
 import type * as React from 'react';
+import type { components } from './util/openapiSchema';
 
 export interface NavItem {
 	disabled?: boolean;
@@ -13,14 +14,14 @@ export interface NavigationProps {
 	items?: NavItem[];
 }
 
-export interface User {
-	admin?: boolean;
-	name: string;
-}
+// export interface User {
+// 	admin?: boolean;
+// 	name: string;
+// }
 
-export interface Role {
-	name: string;
-}
+// export interface Role {
+// 	name: string;
+// }
 
 export interface LocalStorageUser {
 	apiKey: string;
@@ -43,16 +44,21 @@ export type FileProps = {
 
 export type File = {
 	createdAt: string;
-	hash: string;
-	ip: string;
-	name: string;
-	original: string;
-	preview?: string;
-	quarantine: boolean;
-	size: number;
-	thumb: string;
-	type: string;
-	url: string;
+	fileMetadata: {
+		hash: string;
+		ip: string;
+		mimeType: string;
+		originalFilename: string;
+		originalHeight: number;
+		originalWidth: number;
+		size: number;
+		thumbnailHeight: number;
+		thumbnailWidth: number;
+		uuid: string;
+	};
+	filename: string;
+	identifier: string;
+	quarantine: boolean; // Doesnt exist yet
 	uuid: string;
 };
 
@@ -97,7 +103,7 @@ export interface FileWithAdditionalData extends File {
 	};
 }
 
-export interface FileWithIndex extends FileWithAdditionalData {
+export interface FileWithIndex extends File {
 	index: number;
 }
 
@@ -124,16 +130,14 @@ export interface Settings {
 }
 
 export interface Album {
-	count?: number;
-	cover?: string;
+	coverImage: string;
 	createdAt: string;
 	description: string;
 	editedAt: string;
-	files?: FileWithAdditionalData[];
+	filesCount: number;
+	isNSFW: boolean;
 	name: string;
-	nsfw: boolean;
 	uuid: string;
-	zippedAt: string;
 }
 
 export const enum MessageType {
@@ -284,3 +288,17 @@ export interface MetadataBuilder {
 		title?: string;
 	};
 }
+
+// NEW TYPES
+export type UserWithRolesAndQuota = components['schemas']['UserWithRoles'] & {
+	filesCount: number;
+	storageQuota: number;
+	storageQuotaUsed: number;
+};
+
+export type Role = {
+	name: string;
+	permissions: components['schemas']['RolesPermissions']['permissions'];
+	storageQuota: components['schemas']['RolesPermissions']['storageQuota'];
+	uuid: string;
+};

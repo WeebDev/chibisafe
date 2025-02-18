@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import type { Album, FileWithIndex } from '@/types';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -15,10 +14,13 @@ import {
 	DialogTrigger
 } from '@/components/ui/dialog';
 import { FancyMultiSelect } from '@/components/FancyMultiSelect';
-import request from '@/lib/request';
 import { Skeleton } from '@/components/ui/skeleton';
 import { customRevalidateTag } from '@/actions/Revalidate';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ENV } from '@/util/env';
+import type { FileWithFileMetadataAndIndex } from '@/lib/atoms/fileDialog';
+import { openAPIClient } from '@/lib/clientFetch';
+import type { FolderWithFilesCountAndCoverImage } from '@/lib/atoms/albumSettingsDialog';
 
 interface PartialAlbum {
 	name: string;
@@ -27,8 +29,6 @@ interface PartialAlbum {
 
 interface FileWithAlbums {
 	albums?: PartialAlbum[];
-	name: string;
-	url: string;
 	uuid: string;
 }
 
@@ -36,7 +36,7 @@ export const BulkAlbumActions = ({
 	files,
 	isDrawer = false
 }: {
-	readonly files: FileWithIndex[];
+	readonly files: FileWithFileMetadataAndIndex[];
 	readonly isDrawer?: boolean | undefined;
 }) => {
 	const [open, setOpen] = useState(false);
@@ -46,7 +46,7 @@ export const BulkAlbumActions = ({
 	const [allFiles, setAllFiles] = useState<FileWithAlbums[]>([]);
 	const [allFilesOriginal, setAllFilesOriginal] = useState<FileWithAlbums[]>([]);
 
-	const [allAlbums, setAllAlbums] = useState<Album[]>([]);
+	const [allAlbums, setAllAlbums] = useState<FolderWithFilesCountAndCoverImage[]>([]);
 	const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
 
 	const [addedAlbums, setAddedAlbums] = useState<Record<string, string[]>>({});
@@ -54,21 +54,20 @@ export const BulkAlbumActions = ({
 
 	const fetchAllAlbums = useCallback(async () => {
 		try {
-			const { data, error } = await request.get({
-				url: 'albums',
-				query: { limit: 1000 },
-				options: {
-					next: {
-						tags: ['albums']
+			const { data, error } = await openAPIClient.GET('/api/v1/folders', {
+				params: {
+					query: {
+						limit: 9999
 					}
 				}
 			});
+
 			if (error) {
-				toast.error(error);
+				toast.error(error.message);
 				return;
 			}
 
-			setAllAlbums(data.albums);
+			setAllAlbums(data.results);
 		} catch (error) {
 			console.error(error);
 		}
@@ -76,25 +75,27 @@ export const BulkAlbumActions = ({
 
 	const getUsedAlbums = useCallback(async () => {
 		try {
-			const { data, error } = await request.post({
-				url: 'files/albums',
-				body: { files: files.map(file => file.uuid) },
-				options: {
-					next: {
-						tags: ['albums']
-					}
+			const { data, error } = await openAPIClient.POST('/api/v1/bulk-files-folders', {
+				body: {
+					uuids: files.map(file => file.uuid)
 				}
 			});
 
 			if (error) {
-				toast.error(error);
+				toast.error(error.message);
 				return;
 			}
 
-			setAllFiles(data.files);
-			setAllFilesOriginal(data.files);
+			setAllFiles(data);
+			setAllFilesOriginal(data);
 
-			setSelectedAlbums(data.albums?.map((album: Album) => album.uuid) ?? []);
+			// Flatten the album list from all files
+			const allDbAlbums = data.flatMap(file => file.folders);
+
+			// Filter unique albums based on UUID
+			const uniqueAlbums = Array.from(new Set(allDbAlbums.map(album => album.uuid)));
+
+			setSelectedAlbums(uniqueAlbums);
 		} catch (error) {
 			console.error(error);
 		}
@@ -190,16 +191,15 @@ export const BulkAlbumActions = ({
 
 		if (Object.keys(addedAlbums).length > 0) {
 			try {
-				const { error } = await request.post({
-					url: `files/album/add`,
-					body: Object.entries(addedAlbums).map(([albumUuid, filesUuid]) => ({
-						album: albumUuid,
-						files: filesUuid
-					}))
+				const { error } = await openAPIClient.POST('/api/v1/bulk-add-to-folders', {
+					body: {
+						folderUuids: Object.keys(addedAlbums),
+						fileUuids: Object.values(addedAlbums).flat()
+					}
 				});
 
 				if (error) {
-					toast.error(error);
+					toast.error(error.message);
 					return;
 				}
 
@@ -212,16 +212,15 @@ export const BulkAlbumActions = ({
 
 		if (Object.keys(removedAlbums).length > 0) {
 			try {
-				const { error } = await request.post({
-					url: `files/album/remove`,
-					body: Object.entries(removedAlbums).map(([albumUuid, filesUuid]) => ({
-						album: albumUuid,
-						files: filesUuid
-					}))
+				const { error } = await openAPIClient.POST('/api/v1/bulk-delete-from-folders', {
+					body: {
+						folderUuids: Object.keys(removedAlbums),
+						fileUuids: Object.values(removedAlbums).flat()
+					}
 				});
 
 				if (error) {
-					toast.error(error);
+					toast.error(error.message);
 					return;
 				}
 
@@ -298,22 +297,22 @@ export const BulkAlbumActions = ({
 																	{allAlbums.find(el => el.uuid === albumUuid)?.name}
 																</span>
 															</p>
-															<ul className="text-green-800">
+															<ul className="text-green-700">
 																{fileUuids.map(fileUuid => (
 																	<li key={fileUuid}>
 																		<a
-																			href={
+																			href={`${ENV.BASE_API_URL}/${
 																				files.find(
 																					file => file.uuid === fileUuid
-																				)?.url
-																			}
+																				)?.filename
+																			}`}
 																			target="_blank"
 																			rel="noreferrer noopener"
 																		>
 																			{
 																				files.find(
 																					file => file.uuid === fileUuid
-																				)?.name
+																				)?.filename
 																			}
 																		</a>
 																	</li>
@@ -333,22 +332,22 @@ export const BulkAlbumActions = ({
 																	{allAlbums.find(el => el.uuid === albumUuid)?.name}
 																</span>
 															</p>
-															<ul className="text-red-800">
+															<ul className="text-red-700">
 																{fileUuids.map(fileUuid => (
 																	<li key={fileUuid}>
 																		<a
-																			href={
+																			href={`${ENV.BASE_API_URL}/${
 																				files.find(
 																					file => file.uuid === fileUuid
-																				)?.url
-																			}
+																				)?.filename
+																			}`}
 																			target="_blank"
 																			rel="noreferrer noopener"
 																		>
 																			{
 																				files.find(
 																					file => file.uuid === fileUuid
-																				)?.name
+																				)?.filename
 																			}
 																		</a>
 																	</li>

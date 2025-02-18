@@ -23,7 +23,7 @@ export function Navigation({
 		<div className="flex gap-6">
 			<Link href="/" className="hidden items-center md:flex gap-4">
 				{logo}
-				<span className="hidden font-bold sm:inline-block">{settings?.serviceName ?? serviceName}</span>
+				<span className="hidden font-bold sm:inline-block">{settings?.siteName.value ?? serviceName}</span>
 			</Link>
 			<nav className="hidden gap-6 md:flex">
 				<Link

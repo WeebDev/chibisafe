@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import type { PageQuery } from '@/types';
 
-import { fetchEndpoint } from '@/lib/fileFetching';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const metadata: Metadata = {
 	title: 'Dashboard - Admin - User'
@@ -24,16 +24,28 @@ export default async function DashboardAdminUserPage({
 	const perPage = searchParams.limit ? (searchParams.limit > 50 ? 50 : searchParams.limit) : 50;
 	const search = searchParams.search ?? '';
 
-	const {
-		data: response,
-		error,
-		status
-	} = await fetchEndpoint({ type: 'admin', userUuid: params.uuid }, currentPage, perPage, search);
-	if (error && status === 401) {
+	const { data, error, response } = await openAPIClient.GET('/api/v1/users/{uuid}/files', {
+		params: {
+			path: {
+				uuid: params.uuid
+			},
+			query: {
+				offset: currentPage - 1,
+				limit: perPage,
+				search
+			}
+		}
+	});
+
+	if (response.status === 401) {
 		redirect('/login');
 	}
 
-	const username = response.user?.username;
+	if (error) {
+		return <div>Error: {error.message}</div>;
+	}
+
+	const username = data.user?.username;
 	return (
 		<>
 			<DashboardHeader
@@ -48,9 +60,9 @@ export default async function DashboardAdminUserPage({
 			<div className="px-2 w-full">
 				<div className="grid gap-4">
 					<Suspense>
-						<Pagination itemsTotal={response.count} type="admin" />
-						<FilesWrapper files={response.files} total={response.count} type="admin" />
-						<Pagination itemsTotal={response.count} type="admin" />
+						<Pagination itemsTotal={data.count} type="admin" />
+						<FilesWrapper files={data.results} total={data.count} type="admin" />
+						<Pagination itemsTotal={data.count} type="admin" />
 					</Suspense>
 					<FileDialog />
 				</div>

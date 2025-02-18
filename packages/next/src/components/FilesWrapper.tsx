@@ -3,9 +3,10 @@
 
 import type { PropsWithChildren } from 'react';
 import { useCallback, useEffect, useRef, useMemo } from 'react';
-import type { File, FilePropsType } from '@/types';
+import type { FilePropsType } from '@/types';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useSearchParams } from 'next/navigation';
+import type { FileWithFileMetadata } from '@/lib/atoms/fileDialog';
 import { currentTypeAtom, allFilesAtom } from '@/lib/atoms/fileDialog';
 import { useUploadsQuery } from '@/hooks/useUploadsQuery';
 import { FilesTable } from './tables/files-table/FilesTable';
@@ -13,7 +14,7 @@ import { isMasonryViewAtom } from '@/lib/atoms/settings';
 import { Button } from './ui/button';
 import { Masonry } from './Masonry';
 import { cn } from '@/lib/utils';
-import { selectedFilesAtom } from '@/lib/atoms/selectedFiles';
+import { selectedFilesAtom, selectionActiveAtom } from '@/lib/atoms/selectedFiles';
 import { Pencil } from 'lucide-react';
 import {
 	DropdownMenu,
@@ -141,7 +142,7 @@ export function FilesWrapper({
 	albumUuid
 }: {
 	readonly albumUuid?: string | undefined;
-	readonly files?: File[] | undefined;
+	readonly files?: FileWithFileMetadata[] | undefined;
 	readonly total?: number | undefined;
 	readonly type: FilePropsType;
 }) {
@@ -166,13 +167,14 @@ export function FilesWrapper({
 	const showMasonry = useAtomValue(isMasonryViewAtom);
 
 	const filesToUse = useMemo(() => {
-		return (files?.length ? files : isUploads || isAlbumUploads ? data?.files ?? [] : []).map((file, index) => ({
+		return (files?.length ? files : isUploads || isAlbumUploads ? data?.results ?? [] : []).map((file, index) => ({
 			...file,
 			index
 		}));
 	}, [files, data, isUploads, isAlbumUploads]);
 
 	const setSelectedFiles = useSetAtom(selectedFilesAtom);
+	const [isSelectionActive, setIsSelectionActive] = useAtom(selectionActiveAtom);
 
 	useEffect(() => {
 		setCurrentType(type);
@@ -189,11 +191,26 @@ export function FilesWrapper({
 
 	return (
 		<>
+			<Button
+				onClick={() =>
+					setIsSelectionActive(value => {
+						if (value) {
+							setSelectedFiles([]);
+						}
+
+						return !value;
+					})
+				}
+				variant="outline"
+				className="flex md:hidden"
+			>
+				{isSelectionActive ? 'Turn off bulk actions' : 'Bulk actions'}
+			</Button>
 			<div className="flex flex-col w-full h-full gap-4 relative" ref={container}>
 				{showMasonry ? (
 					<Masonry files={filesToUse} type={type} />
 				) : (
-					<FilesTable data={files?.length ? files : data?.files ?? []} type={type} />
+					<FilesTable data={files?.length ? files : data?.results ?? []} type={type} />
 				)}
 			</div>
 			<SelectionWrapper selectAllFiles={selectAllFiles} type={type} />

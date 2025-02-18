@@ -1,6 +1,6 @@
 import { UploadTriggerHomepage } from '@/components/UploadTriggerHomepage';
 import { ChibisafeLogo } from '@/components/svg/ChibisafeLogo';
-import request from '@/lib/request';
+import { openAPIClient } from '@/lib/serverFetch';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/styles/button';
 import { BlocksIcon, GalleryHorizontal, LinkIcon, Star, TagsIcon, UsersRoundIcon } from 'lucide-react';
@@ -27,20 +27,9 @@ export default async function Home() {
 		console.error(error);
 	}
 
-	const { data: settings, error } = await request.get({
-		url: 'settings',
-		options: {
-			next: {
-				tags: ['settings']
-			}
-		}
-	});
+	const { data } = await openAPIClient.GET('/api/v1/settings');
 
-	if (error) {
-		console.log(error);
-	}
-
-	if (!settings) {
+	if (!data) {
 		return (
 			<section className="py-2 sm:py-4">
 				<div className="container flex min-h-[calc(100vh-15rem)] max-w-[64rem] flex-col text-center place-items-center place-content-evenly gap-4">
@@ -54,15 +43,13 @@ export default async function Home() {
 		);
 	}
 
-	if (settings?.useMinimalHomepage) {
+	if (data?.siteMinimalisticUi.value) {
 		return (
 			<section className="py-2 sm:py-4">
 				<div className="container flex min-h-[calc(100vh-16rem)] max-w-[64rem] flex-col text-center place-items-center place-content-evenly gap-4">
 					<ChibisafeLogo className="mx-auto mb-4 sm:h-64 sm:w-64 w-32 h-32" />
-					<h1 className="font-heading text-2xl sm:text-5xl">
-						Welcome to {settings.serviceName ?? 'chibisafe'}
-					</h1>
-					<UploadTriggerHomepage settings={settings} />
+					<h1 className="font-heading text-2xl sm:text-5xl">Welcome to {data.siteName.value}</h1>
+					<UploadTriggerHomepage settings={data} />
 				</div>
 			</section>
 		);
@@ -111,7 +98,7 @@ export default async function Home() {
 					</div>
 
 					<div className="flex flex-col gap-12 place-content-center place-items-center w-full">
-						<UploadTriggerHomepage settings={settings} />
+						<UploadTriggerHomepage settings={data} />
 						<div className="md:hidden flex flex-col gap-4">
 							<Link href="/login" className={cn(buttonVariants({ size: 'lg' }))}>
 								Get Started

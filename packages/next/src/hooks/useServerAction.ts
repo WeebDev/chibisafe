@@ -11,7 +11,7 @@ export const useServerAction = ({
 }: {
 	action: any;
 	identifier: string[] | string;
-	secondaryIdentifier?: string | null;
+	secondaryIdentifier?: string[] | string | null;
 }) => {
 	const [state, formAction, isPending] = useActionState(
 		action.bind(null, identifier, secondaryIdentifier ? secondaryIdentifier : null),

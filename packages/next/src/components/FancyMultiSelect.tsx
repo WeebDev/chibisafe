@@ -26,17 +26,22 @@ export function FancyMultiSelect({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [open, setOpen] = useState(false);
 	const [selected, setSelected] = useState<Option[]>(
-		options.filter(option => initialSelected.includes(option.value))
+		initialSelected.length ? options.filter(option => initialSelected.includes(option.value)) : []
 	);
 	const [inputValue, setInputValue] = useState('');
+	const [selectables, setSelectables] = useState<Option[]>(options.filter(option => !selected.includes(option)));
+
+	console.log('Rerender 💢');
 
 	useEffect(() => {
+		if (!initialSelected.length) return;
 		setSelected(options.filter(option => initialSelected.includes(option.value)));
 	}, [options, initialSelected]);
 
 	const handleUnselect = useCallback(
 		(option: Option) => {
 			setSelected(prev => prev.filter(s => s.value !== option.value));
+			setSelectables(prev => [...prev, option]);
 			onRemoved(option.value);
 		},
 		[onRemoved]
@@ -54,7 +59,10 @@ export function FancyMultiSelect({
 						return newSelected;
 					});
 
-					if (lastValue) onRemoved(lastValue.value);
+					if (lastValue) {
+						setSelectables(prev => [...prev, lastValue]);
+						onRemoved(lastValue.value);
+					}
 				}
 
 				// This is not a default behaviour of the <input /> field
@@ -66,7 +74,15 @@ export function FancyMultiSelect({
 		[onRemoved, selected]
 	);
 
-	const selectables = options.filter(option => !selected.includes(option));
+	const makeSelection = useCallback(
+		(option: Option) => {
+			setInputValue('');
+			setSelected(prev => [...prev, option]);
+			setSelectables(prev => prev.filter(s => s.value !== option.value));
+			onSelected(option.value);
+		},
+		[onSelected]
+	);
 
 	return (
 		<Command onKeyDown={handleKeyDown} className="overflow-visible bg-transparent">
@@ -119,13 +135,9 @@ export function FancyMultiSelect({
 												e.preventDefault();
 												e.stopPropagation();
 											}}
-											onSelect={() => {
-												setInputValue('');
-												setSelected(prev => [...prev, option]);
-												onSelected(option.value);
-											}}
+											onSelect={() => makeSelection(option)}
 											className={'cursor-pointer'}
-											value={option.label}
+											value={option.value}
 										>
 											{option.label}
 										</CommandItem>

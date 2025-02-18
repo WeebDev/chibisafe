@@ -8,7 +8,11 @@ export const getUptime = (seconds: number) => {
 	return `${days}d ${hours}h ${minutes}m ${secondsLeft}s`;
 };
 
-export const getDate = (date: string) => {
+export const getDate = (date: Record<string, unknown> | string) => {
 	if (!date?.length) return 'N/A';
-	return format(date, { date: 'medium', time: 'short' });
+	return format(date as string, { date: 'medium', time: 'short' });
+};
+
+export const isValidDate = (date: Record<string, unknown> | string) => {
+	return new Date(date as string).getTime() > 0;
 };

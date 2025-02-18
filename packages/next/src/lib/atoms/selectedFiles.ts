@@ -1,5 +1,5 @@
-import type { FileWithIndex } from '@/types';
 import { atom } from 'jotai';
+import type { FileWithFileMetadataAndIndex } from './fileDialog';
 
-export const selectedFilesAtom = atom<FileWithIndex[]>([]);
-export const selectionActiveAtom = atom(get => get(selectedFilesAtom).length > 0);
+export const selectedFilesAtom = atom<FileWithFileMetadataAndIndex[]>([]);
+export const selectionActiveAtom = atom(false);

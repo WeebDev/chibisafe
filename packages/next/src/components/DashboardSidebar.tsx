@@ -10,10 +10,10 @@ import {
 	Library,
 	Network,
 	Settings2,
+	ShieldCheck,
 	Tags,
 	UserPlus,
-	Users,
-	Link
+	Users
 } from 'lucide-react';
 
 import { currentUserAtom } from '@/lib/atoms/currentUser';
@@ -22,16 +22,14 @@ import { saveAs } from 'file-saver';
 import request from '@/lib/request';
 import type { UpdateCheck } from '@/types';
 import { useEffect, useState } from 'react';
-import { settingsAtom } from '@/lib/atoms/settings';
 
 export function DashboardSidebar({ onClick }: { onClick?(): void }) {
 	const currentUser = useAtomValue(currentUserAtom);
-	const currentSettings = useAtomValue(settingsAtom);
 	const [update, setUpdate] = useState<UpdateCheck | undefined>(undefined);
 
 	useEffect(() => {
 		const checkForUpdates = async () => {
-			if (currentUser?.roles.some(role => role.name === 'admin')) {
+			if (currentUser?.permissions.canManageSettings) {
 				const { data: response, error } = await request.get({
 					url: 'admin/service/updateCheck'
 				});
@@ -46,7 +44,7 @@ export function DashboardSidebar({ onClick }: { onClick?(): void }) {
 		};
 
 		void checkForUpdates();
-	}, [currentUser?.roles]);
+	}, [currentUser?.permissions.canManageSettings]);
 
 	const getShareXConfig = async (event: any) => {
 		event.preventDefault();
@@ -57,19 +55,19 @@ export function DashboardSidebar({ onClick }: { onClick?(): void }) {
 		}
 
 		const sharexFile = `{
-    "Version": "14.0.0",
-    "Name": "chibisafe",
-    "DestinationType": "ImageUploader, FileUploader",
-    "RequestMethod": "POST",
-    "RequestURL": "${location.origin}/api/upload",
-    "Headers": {
-      "x-api-key": "${currentUser.apiKey}"
-    },
-    "Body": "MultipartFormData",
-    "FileFormName": "file[]",
-    "URL": "{json:url}",
-    "ThumbnailURL": "{json:thumb}"
-  }`;
+      "Version": "14.0.0",
+      "Name": "chibisafe",
+      "DestinationType": "ImageUploader, FileUploader",
+      "RequestMethod": "POST",
+      "RequestURL": "${location.origin}/api/upload",
+      "Headers": {
+        "x-api-key": "${currentUser.apiKey}"
+      },
+      "Body": "MultipartFormData",
+      "FileFormName": "file[]",
+      "URL": "{json:url}",
+      "ThumbnailURL": "{json:thumb}"
+    }`;
 		const sharexBlob = new Blob([sharexFile], { type: 'application/octet-binary' });
 		saveAs(sharexBlob, `${location.hostname}.sxcu`);
 	};
@@ -82,23 +80,20 @@ export function DashboardSidebar({ onClick }: { onClick?(): void }) {
 				<DashboardSidebarItem href="/dashboard/albums" name="Albums" Icon={Library} />
 				<DashboardSidebarItem href="/dashboard/tags" name="Tags" Icon={Tags} />
 				<DashboardSidebarItem href="/dashboard/snippets" name="Snippets" Icon={Code} />
-				{currentSettings?.useUrlShortener ? (
-					<DashboardSidebarItem href="/dashboard/links" name="Short URLs" Icon={Link} />
-				) : null}
 			</nav>
 			<nav className="grid items-start gap-1 mt-4" onClick={() => onClick?.()}>
 				<h3 className="text-muted-foreground text-sm pointer-events-none">Account</h3>
 				<DashboardSidebarItem href="/dashboard/account" name="Credentials" Icon={Key} />
 			</nav>
-			{currentUser?.roles.find(role => role.name === 'admin') ? (
+			{currentUser?.permissions.canManageSettings ? (
 				<nav className="grid items-start gap-1 mt-4" onClick={() => onClick?.()}>
 					<h3 className="text-muted-foreground text-sm pointer-events-none">Admin</h3>
 					<DashboardSidebarItem href="/dashboard/admin/settings" name="Settings" Icon={Settings2} />
 					<DashboardSidebarItem href="/dashboard/admin/users" name="Users" Icon={Users} />
+					<DashboardSidebarItem href="/dashboard/admin/roles" name="Roles" Icon={ShieldCheck} />
 					<DashboardSidebarItem href="/dashboard/admin/files" name="All files" Icon={Files} />
-					<DashboardSidebarItem href="/dashboard/admin/links" name="All short URLs" Icon={Link} />
 					<DashboardSidebarItem href="/dashboard/admin/quarantine" name="Quarantined files" Icon={Files} />
-					<DashboardSidebarItem href="/dashboard/admin/ip" name="Banned IPs" Icon={Network} />
+					<DashboardSidebarItem href="/dashboard/admin/bans" name="Banned IPs" Icon={Network} />
 					<DashboardSidebarItem href="/dashboard/admin/invites" name="Invites" Icon={UserPlus} />
 					<DashboardSidebarItem href="/dashboard/admin/statistics" name="Statistics" Icon={BarChart3} />
 				</nav>

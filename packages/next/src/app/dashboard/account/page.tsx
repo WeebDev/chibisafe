@@ -6,43 +6,25 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { ChangePassword } from '@/components/ChangePassword';
 import { RegenerateApiKey } from '@/components/RegenerateApiKey';
-import request from '@/lib/request';
-import { cookies } from 'next/headers';
-import type { LocalStorageUser, StorageQuota } from '@/types';
 import { formatBytes } from '@/lib/file';
 import { CategoryBar } from '@/components/Statistics';
 import { redirect } from 'next/navigation';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const metadata: Metadata = {
 	title: 'Dashboard - Credentials'
 };
 
 export default async function DashboardPage() {
-	const cookiesStore = cookies();
-	const token = cookiesStore.get('token')?.value;
+	const { data, error, response } = await openAPIClient.GET('/api/v1/users/me');
 
-	const {
-		data: response,
-		error,
-		status
-	} = await request.get({
-		url: `user/me`,
-		headers: {
-			Authorization: `Bearer ${token}`
-		},
-		options: {
-			next: {
-				tags: ['me']
-			}
-		}
-	});
-
-	if (error && status === 401) {
+	if (response.status === 401) {
 		redirect('/login');
 	}
 
-	const user = response?.user as LocalStorageUser;
-	const quota = response?.storageQuota as StorageQuota;
+	if (error) {
+		return null;
+	}
 
 	return (
 		<>
@@ -56,7 +38,7 @@ export default async function DashboardPage() {
 					<div className="flex flex-col gap-2 lg:w-2/4">
 						<div className="flex flex-col gap-1">
 							<Label htmlFor="username">Your username</Label>
-							<Input name="username" id="username" value={user?.username} readOnly />
+							<Input name="username" id="username" value={data.username} readOnly />
 							<p className="text-[0.8rem] text-muted-foreground">
 								Can't be changed, only for display purposes
 							</p>
@@ -67,20 +49,22 @@ export default async function DashboardPage() {
 						<ChangePassword />
 					</div>
 					<div className="flex flex-col w-full">
-						<RegenerateApiKey apiKey={user?.apiKey} />
+						<RegenerateApiKey apiKey={data.apiKey ?? ''} />
 						<Separator className="my-4" />
-						{quota ? (
+						{data.storageQuota ? (
 							<>
 								<span className="text-light-100">Storage quota</span>
 								<span className="text-light-100 flex flex-col gap-2">
 									<CategoryBar
 										values={[40, 30, 20, 10]}
 										colors={['emerald', 'yellow', 'orange', 'rose']}
-										markerValue={quota.quota ? (quota.used / quota.quota) * 100 : 0}
+										markerValue={
+											data.storageQuota ? (data.storageQuotaUsed / data.storageQuota) * 100 : 0
+										}
 									/>
 									<p className="text-[0.8rem] text-muted-foreground">
-										Using {formatBytes(quota.used)} of{' '}
-										{quota.quota ? formatBytes(quota.quota) : 'unlimited'}
+										Using {formatBytes(data.storageQuotaUsed)} of{' '}
+										{data.storageQuota === -1 ? 'unlimited' : formatBytes(data.storageQuota)}
 									</p>
 								</span>
 							</>

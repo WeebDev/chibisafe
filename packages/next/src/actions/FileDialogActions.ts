@@ -1,37 +1,18 @@
 'use server';
 
 import { MessageType } from '@/types';
-import request from '@/lib/request';
-import { getToken } from './utils';
 import { revalidateTag } from 'next/cache';
-
-export const regenerateThumbnail = async (uuid: string) => {
-	try {
-		await request.post({
-			url: `file/${uuid}/thumbnail/regenerate`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
-			}
-		});
-
-		revalidateTag('files');
-
-		return { message: 'Thumbnail queued for regeneration', type: MessageType.Success };
-	} catch (error: any) {
-		return { message: error, type: MessageType.Error };
-	}
-};
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const deleteFile = async (uuid: string) => {
 	try {
-		const { error } = await request.delete({
-			url: `file/${uuid}`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		const { error } = await openAPIClient.POST('/api/v1/files/bulk-delete', {
+			body: {
+				uuids: [uuid]
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('files');
 
@@ -41,20 +22,20 @@ export const deleteFile = async (uuid: string) => {
 	}
 };
 
-export const deleteFileAsAdmin = async (uuid: string) => {
+export const unquarantineFile = async (uuid: string) => {
 	try {
-		const { error } = await request.delete({
-			url: `admin/file/${uuid}`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		const { error } = await openAPIClient.DELETE('/api/v1/files/{uuid}/quarantine', {
+			params: {
+				path: {
+					uuid
+				}
 			}
 		});
 
 		if (error) return { message: error, type: MessageType.Error };
-
 		revalidateTag('files');
 
-		return { message: 'File deleted', type: MessageType.Success };
+		return { message: 'File unquarantined', type: MessageType.Success };
 	} catch (error: any) {
 		return { message: error, type: MessageType.Error };
 	}
@@ -62,15 +43,16 @@ export const deleteFileAsAdmin = async (uuid: string) => {
 
 export const quarantineFile = async (uuid: string) => {
 	try {
-		const { error } = await request.post({
-			url: `admin/file/${uuid}/quarantine`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
-			}
+		const { error } = await openAPIClient.POST('/api/v1/files/{uuid}/quarantine', {
+			params: {
+				path: {
+					uuid
+				}
+			},
+			body: {}
 		});
 
 		if (error) return { message: error, type: MessageType.Error };
-
 		revalidateTag('files');
 
 		return { message: 'File quarantined', type: MessageType.Success };
@@ -79,20 +61,20 @@ export const quarantineFile = async (uuid: string) => {
 	}
 };
 
-export const allowFile = async (uuid: string) => {
+export const regenerateThumbnail = async (uuid: string) => {
 	try {
-		const { error } = await request.post({
-			url: `admin/file/${uuid}/allow`,
-			headers: {
-				authorization: `Bearer ${getToken()}`
+		const { error } = await openAPIClient.POST('/api/v1/files/{uuid}/regenerate-thumbnail', {
+			params: {
+				path: {
+					uuid
+				}
 			}
 		});
 
 		if (error) return { message: error, type: MessageType.Error };
-
 		revalidateTag('files');
 
-		return { message: 'File allowed', type: MessageType.Success };
+		return { message: 'Thumbnail regenerated', type: MessageType.Success };
 	} catch (error: any) {
 		return { message: error, type: MessageType.Error };
 	}

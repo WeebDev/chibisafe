@@ -1,5 +1,7 @@
-import type { Settings } from '@/types';
+import type { components } from '@/util/openapiSchema';
 import { atom } from 'jotai';
 
-export const settingsAtom = atom<Settings | null>(null);
+export type SettingsType = components['schemas']['Settings'];
+
+export const settingsAtom = atom<SettingsType | null>(null);
 export const isMasonryViewAtom = atom(true);

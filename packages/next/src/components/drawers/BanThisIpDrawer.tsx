@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useActionState } from 'react';
 import { MessageType } from '@/types';
 import { Trash2Icon } from 'lucide-react';
-import { useFormState } from 'react-dom';
 import { toast } from 'sonner';
-
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { banIp } from '@/actions/IpActions';
@@ -16,7 +14,7 @@ import { useRouter } from 'next/navigation';
 export function BanThisIpDrawer({ className, ip }: { readonly className?: string; readonly ip: string }) {
 	const router = useRouter();
 	const [open, setOpen] = useState(false);
-	const [state, formAction] = useFormState(banIp, {
+	const [state, formAction] = useActionState(banIp, {
 		message: '',
 		type: MessageType.Uninitialized
 	});

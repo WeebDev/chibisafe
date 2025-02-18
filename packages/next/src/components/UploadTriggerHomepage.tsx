@@ -3,24 +3,25 @@ import { UploadCloudIcon } from 'lucide-react';
 import { UploadTrigger } from './UploadTrigger';
 import { Button } from './ui/react-aria-button';
 import { formatBytes } from '@/lib/file';
-import type { Album, Settings } from '@/types';
 import { currentUserAtom } from '@/lib/atoms/currentUser';
 import { useAtomValue } from 'jotai';
 import { buttonVariants } from '@/styles/button';
 import { cn } from '@/lib/utils';
 import { Combobox } from './Combobox';
 import { useEffect, useState } from 'react';
-import request from '@/lib/request';
 import { toast } from 'sonner';
+import type { SettingsType } from '@/lib/atoms/settings';
+import { openAPIClient } from '@/lib/clientFetch';
+import type { FolderWithFilesCountAndCoverImage } from '@/lib/atoms/albumSettingsDialog';
 
-export const UploadTriggerHomepage = ({ settings }: { readonly settings: Settings }) => {
+export const UploadTriggerHomepage = ({ settings }: { readonly settings: SettingsType }) => {
 	const currentUser = useAtomValue(currentUserAtom);
-	const [albums, setAlbums] = useState<Album[]>([]);
+	const [albums, setAlbums] = useState<FolderWithFilesCountAndCoverImage[]>([]);
 	const [isDisabled, setIsDisabled] = useState(true);
 	const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!settings?.publicMode && !currentUser?.uuid) {
+		if (!settings?.anonymousUploadsEnabled.value && !currentUser?.uuid) {
 			setIsDisabled(true);
 			return;
 		} else {
@@ -28,25 +29,24 @@ export const UploadTriggerHomepage = ({ settings }: { readonly settings: Setting
 		}
 
 		const fetchAlbums = async () => {
-			const { data, error } = await request.get({
-				url: 'albums',
-				query: { limit: 1000 },
-				options: {
-					next: {
-						tags: ['albums']
+			const { data, error } = await openAPIClient.GET('/api/v1/folders', {
+				params: {
+					query: {
+						limit: 9999
 					}
 				}
 			});
+
 			if (error) {
-				toast.error(error);
+				toast.error(error.message);
 				return;
 			}
 
-			setAlbums(data.albums);
+			setAlbums(data.results);
 		};
 
 		void fetchAlbums();
-	}, [currentUser?.uuid, settings.publicMode]);
+	}, [currentUser?.uuid, settings.anonymousUploadsEnabled.value]);
 
 	return isDisabled ? (
 		<div className="flex items-center justify-center w-2/3 mt-8">
@@ -68,7 +68,7 @@ export const UploadTriggerHomepage = ({ settings }: { readonly settings: Setting
 								<span className="font-semibold">Click to upload</span> or drag and drop anywhere
 							</p>
 							<p className="text-xs text-gray-500 dark:text-gray-400">
-								{formatBytes(settings?.maxSize ?? 0)} max per file
+								{formatBytes(settings?.uploadMaxSize.value)} max per file
 							</p>
 						</Button>
 					</label>

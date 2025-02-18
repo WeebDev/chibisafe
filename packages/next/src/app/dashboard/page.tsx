@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import type { PageQuery } from '@/types';
 import { Plus } from 'lucide-react';
 
-import { fetchEndpoint } from '@/lib/fileFetching';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 import { UploadTrigger } from '@/components/UploadTrigger';
@@ -13,6 +12,7 @@ import { Suspense } from 'react';
 import { Pagination } from '@/components/Pagination';
 import { FilesWrapper } from '@/components/FilesWrapper';
 import { FileDialog } from '@/components/dialogs/FileDialog';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const metadata: Metadata = {
 	title: 'Dashboard - Uploads'
@@ -28,8 +28,17 @@ export default async function DashboardPage({ searchParams }: { readonly searchP
 	await queryClient.prefetchQuery({
 		queryKey: ['uploads', { currentPage, perPage, search }],
 		queryFn: async () => {
-			const { data: response } = await fetchEndpoint({ type: 'uploads' }, currentPage, perPage, search);
-			return response;
+			const { data } = await openAPIClient.GET('/api/v1/files', {
+				params: {
+					query: {
+						offset: currentPage - 1,
+						limit: perPage,
+						search
+					}
+				}
+			});
+
+			return data;
 		}
 	});
 

@@ -6,28 +6,28 @@ import { useEffect } from 'react';
 import { useAtom } from 'jotai';
 
 import { currentUserAtom } from '@/lib/atoms/currentUser';
-import request from '@/lib/request';
 import { logout } from '@/lib/logout';
 import { toast } from 'sonner';
+import { openAPIClient } from '@/lib/clientFetch';
 
 export function UserProvider({ shouldFetch = false }: { readonly shouldFetch?: boolean }) {
 	const [currentUser, setCurrentUser] = useAtom(currentUserAtom);
 
 	useEffect(() => {
 		if (!currentUser && shouldFetch) {
-			request
-				.get({ url: 'user/me' })
-				.then(async response => {
-					if (response.error) {
-						if (response.status === 401) {
-							await logout();
-						}
+			openAPIClient
+				.GET('/api/v1/users/me')
+				.then(async ({ data, error, response }) => {
+					if (response.status === 401) {
+						await logout();
+					}
 
-						toast.error(response.error);
+					if (error) {
+						toast.error(error.message);
 						return;
 					}
 
-					setCurrentUser(response.data.user);
+					setCurrentUser(data);
 				})
 				.catch((error: any) => {
 					toast.error(error);

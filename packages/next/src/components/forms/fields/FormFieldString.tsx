@@ -1,6 +1,6 @@
-import type { Setting } from '@/types';
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form';
 import { Input } from '../../ui/input';
+import type { Setting } from '../SettingsForm';
 
 export const FormFieldString = ({ form, data }: { readonly data: Setting; readonly form: any }) => {
 	return (
@@ -11,7 +11,7 @@ export const FormFieldString = ({ form, data }: { readonly data: Setting; readon
 				<FormItem>
 					<FormLabel>{data.name}</FormLabel>
 					<FormControl>
-						<Input placeholder={data.example} {...field} />
+						<Input placeholder={data.example ?? ''} {...field} />
 					</FormControl>
 					<FormDescription>{data.description}</FormDescription>
 					{data.example ? (

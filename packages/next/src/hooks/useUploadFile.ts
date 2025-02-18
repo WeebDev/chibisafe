@@ -32,9 +32,11 @@ export const useUploadFile = ({ albumUuid }: { readonly albumUuid?: string | und
 				endpoint,
 				file,
 				method,
-				maxFileSize: settings?.maxSize ?? 0,
+				maxFileSize: settings?.maxSize ?? 9000 * 1024 * 1024,
 				// If we're storing in s3, we don't want to chunk the file
-				chunkSize: isNetworkStored ? settings?.maxSize ?? 0 : settings?.chunkSize ?? 0,
+				chunkSize: isNetworkStored
+					? settings?.maxSize ?? 9000 * 1024 * 1024
+					: settings?.chunkSize ?? 90 * 1024 * 1024,
 				autoStart: true,
 				maxParallelUploads: 1
 			};

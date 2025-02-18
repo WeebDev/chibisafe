@@ -2,8 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { MessageType } from '@/types';
-import request from '@/lib/request';
-import { getToken } from './utils';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const updateAlbumSettings = async (_: any, form: FormData) => {
 	const uuid = form.get('uuid') as string;
@@ -15,19 +14,18 @@ export const updateAlbumSettings = async (_: any, form: FormData) => {
 	const nsfw = form.get('nsfw') === 'on';
 
 	try {
-		const { error } = await request.post({
-			url: `album/${uuid}/edit`,
+		const { error } = await openAPIClient.PATCH('/api/v1/folders/{uuid}', {
+			params: {
+				path: { uuid }
+			},
 			body: {
 				name,
 				description,
-				nsfw
-			},
-			headers: {
-				authorization: `Bearer ${getToken()}`
+				isNSFW: nsfw
 			}
 		});
 
-		if (error) return { message: error, type: MessageType.Error };
+		if (error) return { message: error.message, type: MessageType.Error };
 
 		revalidateTag('albums');
 		return { message: 'Album updated', type: MessageType.Success };

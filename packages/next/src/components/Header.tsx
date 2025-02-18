@@ -6,22 +6,15 @@ import { PatreonLogo } from '@/components/svg/PatreonLogo';
 import { UploadProgress } from '@/components/UploadProgress';
 import { buttonVariants } from '@/styles/button';
 import { ChibisafeLogo } from './svg/ChibisafeLogo';
-import request from '@/lib/request';
+import { openAPIClient } from '@/lib/serverFetch';
 
 export const Header = async () => {
-	const { data } = await request.get({
-		url: 'settings',
-		options: {
-			next: {
-				tags: ['settings']
-			}
-		}
-	});
+	const { data } = await openAPIClient.GET('/api/v1/settings');
 
 	return (
 		<header className="container z-40">
 			<div className="flex h-16 sm:h-20 place-content-between place-items-center">
-				<Navigation logo={<ChibisafeLogo className="w-6 h-6" />} serviceName={data?.serviceName} />
+				<Navigation logo={<ChibisafeLogo className="w-6 h-6" />} serviceName={data?.siteName.value} />
 				<UploadProgress />
 				<nav className="flex items-center gap-1">
 					<a href="https://discord.gg/5g6vgwn" target="_blank" rel="noopener noreferrer">
