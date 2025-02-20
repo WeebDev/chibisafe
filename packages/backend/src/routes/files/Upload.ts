@@ -182,9 +182,19 @@ export const run = async (req: RequestWithUser, res: FastifyReply) => {
 
 		const album = await validateAlbum(req.headers.albumuuid as string, req.user ? req.user : undefined);
 
+		// set realIP to make sure it is returning the right IP address for some proxies
+		let realIP = req.ip;
+		if (req.headers['cf-connecting-ip']) {
+			realIP = req.headers['cf-connecting-ip'] as string;
+		}
+
+		if (req.headers['x-forwarded-for']) {
+			realIP = req.headers['x-forwarded-for'] as string;
+		}
+
 		const uploadedFile = await handleUploadFile({
 			user: req.user,
-			ip: req.ip,
+			ip: realIP,
 			upload: {
 				name: upload.metadata.name,
 				path: upload.path as string,
